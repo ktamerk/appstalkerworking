@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appstalker - Mobile Screens Gallery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+        
+        .header h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 20px;
+            opacity: 0.95;
+        }
+        
+        .screens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+        }
+        
+        .phone-frame {
+            background: #1A1A1A;
+            border-radius: 40px;
+            padding: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            position: relative;
+        }
+        
+        .phone-notch {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 25px;
+            background: #1A1A1A;
+            border-radius: 0 0 20px 20px;
+            z-index: 10;
+        }
+        
+        .screen {
+            background: #F0F2FF;
+            border-radius: 30px;
+            overflow: hidden;
+            height: 700px;
+            position: relative;
+        }
+        
+        .screen-title {
+            background: white;
+            padding: 50px 20px 20px 20px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+        
+        .screen-title h2 {
+            font-size: 24px;
+            color: #1A1A1A;
+            font-weight: 700;
+            flex: 1;
+        }
+        
+        .menu-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1A1A1A;
+            font-size: 20px;
+            background: #F0F2FF;
+            cursor: pointer;
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .menu-button:active {
+            background: #E0E3FF;
+        }
+        
+        .screen-content {
+            padding: 16px;
+            overflow-y: auto;
+            height: calc(100% - 90px);
+        }
+        
+        /* Feed Screen */
+        .feed-search {
+            background: white;
+            padding: 14px 20px;
+            margin: 0 0 12px 0;
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(108, 99, 255, 0.08);
+        }
+        
+        .feed-search span {
+            margin-right: 10px;
+        }
+        
+        .feed-search input {
+            border: none;
+            outline: none;
+            flex: 1;
+            font-size: 16px;
+            background: transparent;
+        }
+        
+        .user-card {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(108, 99, 255, 0.12);
+        }
+        
+        .user-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background: linear-gradient(135deg, #6C63FF, #9F8FFF);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 22px;
+            margin-right: 14px;
+            border: 2px solid #FFD369;
+            flex-shrink: 0;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .display-name {
+            font-size: 17px;
+            font-weight: bold;
+            color: #1A1A1A;
+            margin-bottom: 2px;
+        }
+        
+        .username {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .apps-section {
+            border-top: 1px solid #f0f0f0;
+            padding-top: 14px;
+            margin-top: 4px;
+        }
+        
+        .apps-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .apps-bubbles {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .app-bubble {
+            width: 54px;
+            height: 54px;
+            border-radius: 27px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        
+        .app-bubble img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .app-bubble.more {
+            background: #F0F2FF;
+            border: 2px dashed #6C63FF;
+            color: #6C63FF;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .cta-buttons {
+            margin-top: 14px;
+        }
+        
+        .btn-view-profile {
+            width: 100%;
+            background: #6C63FF;
+            color: white;
+            padding: 14px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(108, 99, 255, 0.25);
+            letter-spacing: 0.3px;
+        }
+        
+        /* Notifications Screen */
+        .notification-header {
+            background: white;
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .mark-all-btn {
+            background: #6C63FF;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 15px;
+            box-shadow: 0 2px 4px rgba(108, 99, 255, 0.2);
+        }
+        
+        .notification-card {
+            background: white;
+            padding: 16px;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        
+        .notification-card.unread {
+            background: linear-gradient(135deg, #F0F2FF 0%, #F8F9FF 100%);
+            border: 1.5px solid #E0E3FF;
+            border-left: 4px solid #6C63FF;
+            box-shadow: 0 2px 12px rgba(108, 99, 255, 0.12);
+        }
+        
+        .notification-card.unread.installed {
+            border-left-color: #FFD369;
+            background: linear-gradient(135deg, #FFF9E6 0%, #FFFBF0 100%);
+            border-color: #FFE9B3;
+        }
+        
+        .notification-card.unread.liked {
+            border-left-color: #FF6B9D;
+            background: linear-gradient(135deg, #FFE5EE 0%, #FFF0F6 100%);
+            border-color: #FFD4E5;
+        }
+        
+        .notification-card.unread.friend {
+            border-left-color: #4ECDC4;
+            background: linear-gradient(135deg, #E0F7F5 0%, #F0FFFE 100%);
+            border-color: #C4F0EC;
+        }
+        
+        .icon-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-right: 14px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        
+        .icon-badge img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .icon-badge.follow { background: rgba(108, 99, 255, 0.2); }
+        .icon-badge.installed { background: rgba(255, 211, 105, 0.2); }
+        .icon-badge.liked { background: rgba(255, 107, 157, 0.2); }
+        .icon-badge.friend { background: rgba(78, 205, 196, 0.2); }
+        
+        .notification-content {
+            flex: 1;
+        }
+        
+        .notification-text {
+            font-size: 15px;
+            color: #1A1A1A;
+            margin-bottom: 5px;
+        }
+        
+        .notification-text strong {
+            font-weight: bold;
+        }
+        
+        .notification-time {
+            font-size: 11px;
+            color: #bbb;
+            font-weight: 500;
+        }
+        
+        .unread-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 5px;
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+        
+        /* Profile Screen */
+        .profile-header {
+            background: white;
+            padding: 20px 16px 12px 16px;
+        }
+        
+        .profile-top {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .profile-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 35px;
+            background: linear-gradient(135deg, #6C63FF, #9F8FFF);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 28px;
+            margin-right: 16px;
+            border: 3px solid #FFD369;
+            flex-shrink: 0;
+        }
+        
+        .profile-stats {
+            display: flex;
+            flex: 1;
+            gap: 8px;
+        }
+        
+        .stat {
+            flex: 1;
+            text-align: center;
+            background: linear-gradient(135deg, #F0F2FF 0%, #E8EBFF 100%);
+            padding: 12px 8px;
+            border-radius: 12px;
+            border: 1px solid #E0E3FF;
+            box-shadow: 0 2px 8px rgba(108, 99, 255, 0.08);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: #6C63FF;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .profile-info {
+            margin-bottom: 12px;
+        }
+        
+        .profile-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1A1A1A;
+            margin-bottom: 4px;
+        }
+        
+        .profile-bio {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .profile-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .profile-btn {
+            flex: 1;
+            background: #6C63FF;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .apps-section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1A1A1A;
+            margin-bottom: 18px;
+            padding-left: 2px;
+        }
+        
+        .app-card {
+            background: white;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+            border: 1px solid #f5f5f5;
+        }
+        
+        .app-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            margin-right: 14px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        
+        .app-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .app-name {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1A1A1A;
+        }
+        
+        .tab-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 0.5px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            padding: 8px 0 20px 0;
+        }
+        
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+        }
+        
+        .tab svg {
+            width: 28px;
+            height: 28px;
+            fill: #8E8E93;
+            transition: fill 0.2s;
+        }
+        
+        .tab.active svg {
+            fill: #6C63FF;
+        }
+        
+        /* Login/Register Screens */
+        .auth-screen {
+            padding: 40px 24px;
+            text-align: center;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .app-logo {
+            font-size: 72px;
+            margin-bottom: 16px;
+        }
+        
+        .app-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #6C63FF;
+            margin-bottom: 8px;
+        }
+        
+        .app-tagline {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 40px;
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+        
+        .input-wrapper input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            margin-left: 12px;
+        }
+        
+        .auth-btn {
+            background: #6C63FF;
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 24px;
+            box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+        }
+        
+        .auth-link {
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .auth-link a {
+            color: #1A1A1A;
+            font-weight: 700;
+            text-decoration: underline;
+            text-decoration-color: #6C63FF;
+            text-underline-offset: 3px;
+        }
+        
+        .social-login {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .social-login-text {
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+        
+        .social-buttons {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .social-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1.5px solid #e0e0e0;
+            background: white;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .social-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .input-wrapper input {
+            caret-color: #6C63FF !important;
+        }
+        
+        /* Search Screen */
+        .search-result {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        
+        .follow-btn {
+            background: #6C63FF;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            margin-left: auto;
+        }
+        
+        /* Settings Screen */
+        .settings-item {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .settings-label {
+            font-size: 16px;
+            color: #1A1A1A;
+            font-weight: 500;
+        }
+        
+        .settings-arrow {
+            color: #999;
+            font-size: 18px;
+        }
+        
+        @media (max-width: 768px) {
+            .screens-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Appstalker Mobile Screens</h1>
+            <p>Premium Apple HIG UI/UX Design - Tüm Ekranlar</p>
+        </div>
+
+        <div class="screens-grid">
+            <!-- Login Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="auth-screen" style="background: white;">
+                        <div style="padding: 30px; padding-top: 80px;">
+                            <div style="font-size: 32px; font-weight: bold; color: #1A1A1A; margin-bottom: 8px;">Welcome Back</div>
+                            <div style="font-size: 16px; color: #666;">Sign in to continue</div>
+                        </div>
+                        <div style="padding: 0 30px;">
+                            <div class="input-group">
+                                <div class="input-wrapper">
+                                    <span>✉️</span>
+                                    <input type="email" placeholder="Email address" readonly>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <div class="input-wrapper">
+                                    <span>🔒</span>
+                                    <input type="password" placeholder="Password" readonly>
+                                </div>
+                            </div>
+                            <div class="auth-btn">Sign In</div>
+                            <div class="auth-link">
+                                Don't have an account? <a href="#">Sign Up</a>
+                            </div>
+                            
+                            <div class="social-login">
+                                <div class="social-login-text">Or continue with</div>
+                                <div class="social-buttons">
+                                    <div class="social-btn">
+                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                        </svg>
+                                        Google
+                                    </div>
+                                    <div class="social-btn">
+                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" fill="#000000"/>
+                                        </svg>
+                                        Apple
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Register Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="auth-screen" style="background: white;">
+                        <div style="padding: 30px; padding-top: 60px;">
+                            <div style="font-size: 32px; font-weight: bold; color: #1A1A1A; margin-bottom: 8px;">Create Account</div>
+                            <div style="font-size: 16px; color: #666;">Join the community and discover apps</div>
+                        </div>
+                        <div>
+                            <div class="input-group">
+                                <div class="input-wrapper">
+                                    <span>👤</span>
+                                    <input type="text" placeholder="Username" readonly>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <div class="input-wrapper">
+                                    <span>✉️</span>
+                                    <input type="email" placeholder="Email" readonly>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <div class="input-wrapper">
+                                    <span>🔒</span>
+                                    <input type="password" placeholder="Password" readonly>
+                                </div>
+                            </div>
+                            <div class="auth-btn">Sign Up</div>
+                            <div class="auth-link">
+                                Already have an account? <a href="#">Login</a>
+                            </div>
+                            
+                            <div class="social-login">
+                                <div class="social-login-text">Or continue with</div>
+                                <div class="social-buttons">
+                                    <div class="social-btn">
+                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                        </svg>
+                                        Google
+                                    </div>
+                                    <div class="social-btn">
+                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" fill="#000000"/>
+                                        </svg>
+                                        Apple
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feed Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>Feed</h2>
+                    </div>
+                    <div class="screen-content">
+                        <div class="feed-search">
+                            <span>🔍</span>
+                            <input type="text" placeholder="Search people or apps..." readonly>
+                        </div>
+                        
+                        <div class="user-card">
+                            <div class="user-header">
+                                <div class="avatar">A</div>
+                                <div class="user-info">
+                                    <div class="display-name">Alex Johnson</div>
+                                    <div class="username">@alexj</div>
+                                </div>
+                            </div>
+                            <div class="apps-section">
+                                <div class="apps-label">📱 12 apps</div>
+                                <div class="apps-bubbles">
+                                    <div class="app-bubble">
+                                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHZpZXdCb3g9IjAgMCA1NCA1NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHJ4PSIxMiIgZmlsbD0idXJsKCNpZ0dyYWQpIi8+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJpZ0dyYWQiIHgxPSIwIiB5MT0iMCIgeDI9IjU0IiB5Mj0iNTQiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmMDk0MzMiLz48c3RvcCBvZmZzZXQ9IjI1JSIgc3RvcC1jb2xvcj0iI2U2NjgzYyIvPjxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZGMyNzQzIi8+PHN0b3Agb2Zmc2V0PSI3NSUiIHN0b3AtY29sb3I9IiNjYzIzNjYiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNiYzE4ODgiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSIyNyIgY3k9IjI3IiByPSI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiLz48L3N2Zz4=" alt="Instagram">
+                                    </div>
+                                    <div class="app-bubble">
+                                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHZpZXdCb3g9IjAgMCA1NCA1NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHJ4PSIxMiIgZmlsbD0iIzFEQjk1NCIvPjxjaXJjbGUgY3g9IjI3IiBjeT0iMjciIHI9IjEyIiBmaWxsPSIjMUVENzYwIi8+PGNpcmNsZSBjeD0iMjciIGN5PSIyNyIgcj0iOCIgZmlsbD0iIzFEQjk1NCIvPjwvc3ZnPg==" alt="Spotify">
+                                    </div>
+                                    <div class="app-bubble">
+                                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHZpZXdCb3g9IjAgMCA1NCA1NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHJ4PSIxMiIgZmlsbD0iIzI1RDM2NiIvPjxwYXRoIGQ9Ik0yNyAyMEMyNC4yNCAyMCAyMiAyMi4yNCAyMiAyNVYyOUMyMiAzMS43NiAyNC4yNCAzNCAyNyAzNEMyOS43NiAzNCAzMiAzMS43NiAzMiAyOVYyNUMzMiAyMi4yNCAyOS43NiAyMCAyNyAyMFoiIGZpbGw9IndoaXRlIi8+PGNpcmNsZSBjeD0iMzQiIGN5PSIyMCIgcj0iMiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=" alt="WhatsApp">
+                                    </div>
+                                    <div class="app-bubble">
+                                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHZpZXdCb3g9IjAgMCA1NCA1NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHJ4PSIxMiIgZmlsbD0iIzFEQTFGMiIvPjxwYXRoIGQ9Ik0zNCAyMkgzMEwyOCAyMEwyNiAyMkgyMkMyMC45IDIyIDIwIDIyLjkgMjAgMjRWMzBDMjAgMzEuMSAyMC45IDMyIDIyIDMySDM0QzM1LjEgMzIgMzYgMzEuMSAzNiAzMFYyNEMzNiAyMi45IDM1LjEgMjIgMzQgMjJaIiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==" alt="Twitter">
+                                    </div>
+                                    <div class="app-bubble more">+8</div>
+                                </div>
+                            </div>
+                            <div class="cta-buttons">
+                                <div class="btn-view-profile">View Profile</div>
+                            </div>
+                        </div>
+                        
+                        <div class="user-card">
+                            <div class="user-header">
+                                <div class="avatar">M</div>
+                                <div class="user-info">
+                                    <div class="display-name">Maria Garcia</div>
+                                    <div class="username">@mariag</div>
+                                </div>
+                            </div>
+                            <div class="apps-section">
+                                <div class="apps-label">📱 8 apps</div>
+                                <div class="apps-bubbles">
+                                    <div class="app-bubble">
+                                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHZpZXdCb3g9IjAgMCA1NCA1NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHJ4PSIxMiIgZmlsbD0idXJsKCNpZ0dyYWQpIi8+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJpZ0dyYWQiIHgxPSIwIiB5MT0iMCIgeDI9IjU0IiB5Mj0iNTQiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmMDk0MzMiLz48c3RvcCBvZmZzZXQ9IjI1JSIgc3RvcC1jb2xvcj0iI2U2NjgzYyIvPjxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZGMyNzQzIi8+PHN0b3Agb2Zmc2V0PSI3NSUiIHN0b3AtY29sb3I9IiNjYzIzNjYiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNiYzE4ODgiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSIyNyIgY3k9IjI3IiByPSI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiLz48L3N2Zz4=" alt="Instagram">
+                                    </div>
+                                    <div class="app-bubble">
+                                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHZpZXdCb3g9IjAgMCA1NCA1NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHJ4PSIxMiIgZmlsbD0iI0U1MDkxNCIvPjxwYXRoIGQ9Ik0yMCAyNEMyMCAyMi4zNCAyMS4zNCAyMSAyMyAyMUgzMUMzMi42NiAyMSAzNCAyMi4zNCAzNCAyNFYzMEMzNCAzMS42NiAzMi42NiAzMyAzMSAzM0gyM0MyMS4zNCAzMyAyMCAzMS42NiAyMCAzMFYyNFoiIGZpbGw9IndoaXRlIi8+PHBhdGggZD0iTTI1IDI3TDI5IDI3TDI3IDI5TDI3IDI1WiIgZmlsbD0iI0U1MDkxNCIvPjwvc3ZnPg==" alt="Netflix">
+                                    </div>
+                                    <div class="app-bubble">
+                                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHZpZXdCb3g9IjAgMCA1NCA1NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHJ4PSIxMiIgZmlsbD0iI0ZGMDAwMCIvPjxwYXRoIGQ9Ik0yMyAyMEwyMyAzNEwzNCAyN0wyMyAyMFoiIGZpbGw9IndoaXRlIi8+PC9zdmc+" alt="YouTube">
+                                    </div>
+                                    <div class="app-bubble more">+5</div>
+                                </div>
+                            </div>
+                            <div class="cta-buttons">
+                                <div class="btn-view-profile">View Profile</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-bar">
+                        <div class="tab active">
+                            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-content" style="padding-top: 20px;">
+                        <div style="padding: 15px; background: white; border-bottom: 1px solid #eee;">
+                            <div style="font-size: 24px; font-weight: bold; color: #1A1A1A; margin-bottom: 12px;">Search</div>
+                            <div style="border: 1px solid #ddd; border-radius: 8px; padding: 12px; background: #f9f9f9;">
+                                <input type="text" placeholder="Search users..." readonly style="border: none; outline: none; width: 100%; background: transparent; font-size: 16px;">
+                            </div>
+                        </div>
+                        
+                        <div class="search-result">
+                            <div class="avatar" style="width: 48px; height: 48px; font-size: 18px;">S</div>
+                            <div class="user-info">
+                                <div class="display-name">Sarah Wilson</div>
+                                <div class="username">@sarahw</div>
+                            </div>
+                            <div class="follow-btn">Follow</div>
+                        </div>
+                        
+                        <div class="search-result">
+                            <div class="avatar" style="width: 48px; height: 48px; font-size: 18px;">J</div>
+                            <div class="user-info">
+                                <div class="display-name">James Brown</div>
+                                <div class="username">@jamesb</div>
+                            </div>
+                            <div class="follow-btn">Follow</div>
+                        </div>
+                        
+                        <div class="search-result">
+                            <div class="avatar" style="width: 48px; height: 48px; font-size: 18px;">E</div>
+                            <div class="user-info">
+                                <div class="display-name">Emma Davis</div>
+                                <div class="username">@emmad</div>
+                            </div>
+                            <div class="follow-btn">Follow</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-bar">
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        </div>
+                        <div class="tab active">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>Notifications</h2>
+                    </div>
+                    <div class="notification-header">
+                        <div class="mark-all-btn">✓ Mark All Read</div>
+                    </div>
+                    <div class="screen-content" style="padding-top: 8px;">
+                        <div class="notification-card unread">
+                            <div class="icon-badge follow">👤</div>
+                            <div class="notification-content">
+                                <div class="notification-text">
+                                    <strong>Sarah Williams</strong> started following you
+                                </div>
+                                <div class="notification-time">2m ago</div>
+                            </div>
+                            <div class="unread-dot" style="background: #6C63FF;"></div>
+                        </div>
+                        
+                        <div class="notification-card unread installed">
+                            <div class="icon-badge installed">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHZpZXdCb3g9IjAgMCA1NCA1NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImlnIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkQ1OzIwIiBzdG9wLW9wYWNpdHk9IjEiLz48c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZDMEY3RDsiIHN0b3Atb3BhY2l0eT0iMSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6Izg3MzREQzsiIHN0b3Atb3BhY2l0eT0iMSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI1NCIgaGVpZ2h0PSI1NCIgcng9IjE0IiBmaWxsPSJ1cmwoI2lnKSIvPjxjaXJjbGUgY3g9IjI3IiBjeT0iMjciIHI9IjkiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0ibm9uZSIvPjxjaXJjbGUgY3g9IjM5IiBjeT0iMTUiIHI9IjMiIGZpbGw9IndoaXRlIi8+PC9zdmc+" alt="Instagram">
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-text">
+                                    <strong>Mike Chen</strong> installed Instagram
+                                </div>
+                                <div class="notification-time">15m ago</div>
+                            </div>
+                            <div class="unread-dot" style="background: #FFD369;"></div>
+                        </div>
+                        
+                        <div class="notification-card unread liked">
+                            <div class="icon-badge liked">❤️</div>
+                            <div class="notification-content">
+                                <div class="notification-text">
+                                    <strong>Emma Davis</strong> liked your profile
+                                </div>
+                                <div class="notification-time">1h ago</div>
+                            </div>
+                            <div class="unread-dot" style="background: #FF6B9D;"></div>
+                        </div>
+                        
+                        <div class="notification-card unread friend">
+                            <div class="icon-badge friend">🤝</div>
+                            <div class="notification-content">
+                                <div class="notification-text">
+                                    <strong>John Smith</strong> sent you a friend request
+                                </div>
+                                <div class="notification-time">2h ago</div>
+                            </div>
+                            <div class="unread-dot" style="background: #4ECDC4;"></div>
+                        </div>
+                        
+                        <div class="notification-card installed">
+                            <div class="icon-badge installed">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHZpZXdCb3g9IjAgMCA1NCA1NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHJ4PSIxMiIgZmlsbD0iIzFEQjk1NCIvPjxwYXRoIGQ9Ik0zNS41IDIwQzMwLjggMjAgMjcgMjMuOCAyNyAyOC41VjI5QzI3IDMxLjc2IDI0LjI0IDM0IDIxLjUgMzRDMTguNzYgMzQgMTYgMzEuNzYgMTYgMjlWMjguNUMxNiAyMy44IDEyLjIgMjAgNy41IDIwVjIyQzExLjEgMjIgMTQgMjQuOSAxNCAyOC41VjI5QzE0IDMyLjg2IDE3LjE0IDM2IDIxIDM2QzI0Ljg2IDM2IDI4IDMyLjg2IDI4IDI5VjI4LjVDMjggMjQuOSAzMC45IDIyIDM0LjUgMjJWMjBIMzUuNVoiIGZpbGw9IndoaXRlIi8+PHBhdGggZD0iTTM4IDI1SDQwVjI4SDM4VjI1WiIgZmlsbD0id2hpdGUiLz48cGF0aCBkPSJNMzggMjJINDBWMjRIMzhWMjJaIiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==" alt="Spotify">
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-text">
+                                    <strong>Alex Johnson</strong> installed Spotify
+                                </div>
+                                <div class="notification-time">2d ago</div>
+                            </div>
+                        </div>
+                        
+                        <div class="notification-card">
+                            <div class="icon-badge follow">👤</div>
+                            <div class="notification-content">
+                                <div class="notification-text">
+                                    <strong>Lisa Brown</strong> started following you
+                                </div>
+                                <div class="notification-time">3d ago</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-bar">
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </div>
+                        <div class="tab active">
+                            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>Profile</h2>
+                        <div class="menu-button" title="Settings">⋮</div>
+                    </div>
+                    <div class="profile-header">
+                        <div class="profile-top">
+                            <div class="profile-avatar">J</div>
+                            <div class="profile-stats">
+                                <div class="stat">
+                                    <div class="stat-value">1.2K</div>
+                                    <div class="stat-label">Followers</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value">543</div>
+                                    <div class="stat-label">Following</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value">24</div>
+                                    <div class="stat-label">Apps</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name">John Doe</div>
+                            <div class="profile-bio">📱 Tech enthusiast | 🎮 Gamer | 🎵 Music lover</div>
+                        </div>
+                        <div class="profile-buttons">
+                            <div class="profile-btn">Edit Profile</div>
+                            <div class="profile-btn">Manage Apps</div>
+                        </div>
+                    </div>
+                    
+                    <div class="screen-content">
+                        <div class="apps-section-title">Installed Apps</div>
+                        
+                        <div class="app-card">
+                            <div class="app-icon">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHZpZXdCb3g9IjAgMCA1NiA1NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHJ4PSIxNCIgZmlsbD0idXJsKCNpZ0dyYWQpIi8+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJpZ0dyYWQiIHgxPSIwIiB5MT0iMCIgeDI9IjU2IiB5Mj0iNTYiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmMDk0MzMiLz48c3RvcCBvZmZzZXQ9IjI1JSIgc3RvcC1jb2xvcj0iI2U2NjgzYyIvPjxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZGMyNzQzIi8+PHN0b3Agb2Zmc2V0PSI3NSUiIHN0b3AtY29sb3I9IiNjYzIzNjYiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNiYzE4ODgiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSIyOCIgY3k9IjI4IiByPSIxMCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIzIiBmaWxsPSJub25lIi8+PC9zdmc+" alt="Instagram">
+                            </div>
+                            <div class="app-name">Instagram</div>
+                        </div>
+                        
+                        <div class="app-card">
+                            <div class="app-icon">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHZpZXdCb3g9IjAgMCA1NiA1NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHJ4PSIxNCIgZmlsbD0iIzFEQjk1NCIvPjxjaXJjbGUgY3g9IjI4IiBjeT0iMjgiIHI9IjEzIiBmaWxsPSIjMUVENzYwIi8+PGNpcmNsZSBjeD0iMjgiIGN5PSIyOCIgcj0iOSIgZmlsbD0iIzFEQjk1NCIvPjwvc3ZnPg==" alt="Spotify">
+                            </div>
+                            <div class="app-name">Spotify</div>
+                        </div>
+                        
+                        <div class="app-card">
+                            <div class="app-icon">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHZpZXdCb3g9IjAgMCA1NiA1NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHJ4PSIxNCIgZmlsbD0iIzI1RDM2NiIvPjxwYXRoIGQ9Ik0yOCAyMUMyNS4yNCAyMSAyMyAyMy4yNCAyMyAyNlYzMEMyMyAzMi43NiAyNS4yNCAzNSAyOCAzNUMzMC43NiAzNSAzMyAzMi43NiAzMyAzMFYyNkMzMyAyMy4yNCAzMC43NiAyMSAyOCAyMVoiIGZpbGw9IndoaXRlIi8+PGNpcmNsZSBjeD0iMzUiIGN5PSIyMSIgcj0iMiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=" alt="WhatsApp">
+                            </div>
+                            <div class="app-name">WhatsApp</div>
+                        </div>
+                        
+                        <div class="app-card">
+                            <div class="app-icon">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHZpZXdCb3g9IjAgMCA1NiA1NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHJ4PSIxNCIgZmlsbD0iIzFEQTFGMiIvPjxwYXRoIGQ9Ik0zNSAyM0gzMUwyOSAyMUwyNyAyM0gyM0MyMS45IDIzIDIxIDIzLjkgMjEgMjVWMzFDMjEgMzIuMSAyMS45IDMzIDIzIDMzSDM1QzM2LjEgMzMgMzcgMzIuMSAzNyAzMVYyNUMzNyAyMy45IDM2LjEgMjMgMzUgMjNaIiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==" alt="Twitter">
+                            </div>
+                            <div class="app-name">Twitter</div>
+                        </div>
+                        
+                        <div class="app-card">
+                            <div class="app-icon">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHZpZXdCb3g9IjAgMCA1NiA1NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHJ4PSIxNCIgZmlsbD0iI0U1MDkxNCIvPjxwYXRoIGQ9Ik0yMSAyNUMyMSAyMy4zNCAyMi4zNCAyMiAyNCAyMkgzMkMzMy42NiAyMiAzNSAyMy4zNCAzNSAyNVYzMUMzNSAzMi42NiAzMy42NiAzNCAzMiAzNEgyNEMyMi4zNCAzNCAyMSAzMi42NiAyMSAzMVYyNVoiIGZpbGw9IndoaXRlIi8+PHBhdGggZD0iTTI2IDI4TDMwIDI4TDI4IDMwTDI4IDI2WiIgZmlsbD0iI0U1MDkxNCIvPjwvc3ZnPg==" alt="Netflix">
+                            </div>
+                            <div class="app-name">Netflix</div>
+                        </div>
+                        
+                        <div class="app-card">
+                            <div class="app-icon">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHZpZXdCb3g9IjAgMCA1NiA1NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHJ4PSIxNCIgZmlsbD0iI0ZGMDAwMCIvPjxwYXRoIGQ9Ik0yNCAyMUwyNCAzNUwzNSAyOEwyNCAyMVoiIGZpbGw9IndoaXRlIi8+PC9zdmc+" alt="YouTube">
+                            </div>
+                            <div class="app-name">YouTube</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-bar">
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                        </div>
+                        <div class="tab active">
+                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>Settings</h2>
+                    </div>
+                    <div class="screen-content">
+                        <div class="settings-item">
+                            <div class="settings-label">⚙️ Account Settings</div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        
+                        <div class="settings-item">
+                            <div class="settings-label">🔒 Privacy & Security</div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        
+                        <div class="settings-item">
+                            <div class="settings-label">🔔 Notifications</div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        
+                        <div class="settings-item">
+                            <div class="settings-label">❤️ Liked Profiles</div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        
+                        <div class="settings-item">
+                            <div class="settings-label">❓ Help & Support</div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        
+                        <div class="settings-item">
+                            <div class="settings-label">ℹ️ About Appstalker</div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        
+                        <div class="settings-item" style="margin-top: 20px; background: #ffebee;">
+                            <div class="settings-label" style="color: #d32f2f; font-weight: 600;">🚪 Logout</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-bar">
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                        </div>
+                        <div class="tab active">
+                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Profile Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>Edit Profile</h2>
+                    </div>
+                    <div class="screen-content">
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <div class="profile-avatar" style="margin: 0 auto 16px;">J</div>
+                            <div style="color: #6C63FF; font-weight: 600; font-size: 16px;">Change Photo</div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <div style="font-size: 13px; color: #666; margin-bottom: 8px; font-weight: 500;">Display Name</div>
+                            <div class="input-wrapper">
+                                <input type="text" placeholder="John Doe" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <div style="font-size: 13px; color: #666; margin-bottom: 8px; font-weight: 500;">Bio</div>
+                            <div class="input-wrapper">
+                                <input type="text" placeholder="Tell us about yourself..." readonly>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 30px;">
+                            <div class="auth-btn" style="display: inline-block; padding: 12px 40px; margin: 0;">Save</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-bar">
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                        </div>
+                        <div class="tab active">
+                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manage Apps Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>Manage Apps</h2>
+                    </div>
+                    <div class="screen-content">
+                        <div style="background: #e3f2fd; padding: 12px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; color: #1976d2;">
+                            💡 Select which apps to show on your profile
+                        </div>
+                        
+                        <div class="app-card">
+                            <div class="app-icon">
+                                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/instagram.svg" alt="Instagram" style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 14px;">
+                            </div>
+                            <div class="app-name">Instagram</div>
+                            <div style="width: 50px; height: 30px; background: #6C63FF; border-radius: 15px; margin-left: auto; position: relative;">
+                                <div style="width: 26px; height: 26px; background: white; border-radius: 13px; position: absolute; right: 2px; top: 2px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="app-card">
+                            <div class="app-icon">
+                                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/spotify.svg" alt="Spotify" style="background: #1DB954; padding: 14px;">
+                            </div>
+                            <div class="app-name">Spotify</div>
+                            <div style="width: 50px; height: 30px; background: #6C63FF; border-radius: 15px; margin-left: auto; position: relative;">
+                                <div style="width: 26px; height: 26px; background: white; border-radius: 13px; position: absolute; right: 2px; top: 2px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="app-card">
+                            <div class="app-icon">
+                                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg" alt="WhatsApp" style="background: #25D366; padding: 14px;">
+                            </div>
+                            <div class="app-name">WhatsApp</div>
+                            <div style="width: 50px; height: 30px; background: #ddd; border-radius: 15px; margin-left: auto; position: relative;">
+                                <div style="width: 26px; height: 26px; background: white; border-radius: 13px; position: absolute; left: 2px; top: 2px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="app-card">
+                            <div class="app-icon">
+                                <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/twitter.svg" alt="Twitter" style="background: #1DA1F2; padding: 14px;">
+                            </div>
+                            <div class="app-name">Twitter</div>
+                            <div style="width: 50px; height: 30px; background: #6C63FF; border-radius: 15px; margin-left: auto; position: relative;">
+                                <div style="width: 26px; height: 26px; background: white; border-radius: 13px; position: absolute; right: 2px; top: 2px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-bar">
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                        </div>
+                        <div class="tab active">
+                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recommended for You Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>✨ For You</h2>
+                    </div>
+                    <div class="screen-content">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 16px; margin-bottom: 20px; color: white;">
+                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Based on your apps</div>
+                            <div style="font-size: 20px; font-weight: 700;">Apps we think you'll love</div>
+                        </div>
+                        
+                        <div class="user-card">
+                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                <div style="width: 64px; height: 64px; border-radius: 32px; background: linear-gradient(45deg, #667eea, #764ba2); margin-right: 14px;"></div>
+                                <div>
+                                    <div style="font-size: 15px; font-weight: 600; color: #1A1A1A;">Notion</div>
+                                    <div style="font-size: 13px; color: #666;">📊 Productivity</div>
+                                    <div style="font-size: 12px; color: #6C63FF; margin-top: 4px;">847 users • 95% match</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <div style="flex: 1; background: #F0F2FF; color: #6C63FF; padding: 10px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: 600;">View Details</div>
+                                <div style="flex: 1; background: #6C63FF; color: white; padding: 10px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: 600;">Get App</div>
+                            </div>
+                        </div>
+                        
+                        <div class="user-card">
+                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                <div style="width: 64px; height: 64px; border-radius: 32px; background: #1DB954; margin-right: 14px;"></div>
+                                <div>
+                                    <div style="font-size: 15px; font-weight: 600; color: #1A1A1A;">Figma</div>
+                                    <div style="font-size: 13px; color: #666;">🎨 Design</div>
+                                    <div style="font-size: 12px; color: #6C63FF; margin-top: 4px;">623 users • 89% match</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <div style="flex: 1; background: #F0F2FF; color: #6C63FF; padding: 10px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: 600;">View Details</div>
+                                <div style="flex: 1; background: #6C63FF; color: white; padding: 10px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: 600;">Get App</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-bar">
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        </div>
+                        <div class="tab active">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- App Detail Page Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>← Notion</h2>
+                    </div>
+                    <div class="screen-content">
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <div style="width: 100px; height: 100px; border-radius: 24px; background: linear-gradient(45deg, #667eea, #764ba2); margin: 0 auto 16px; box-shadow: 0 8px 24px rgba(102,126,234,0.3);"></div>
+                            <div style="font-size: 24px; font-weight: 700; color: #1A1A1A; margin-bottom: 4px;">Notion</div>
+                            <div style="font-size: 14px; color: #666;">📊 Productivity</div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+                            <div style="flex: 1; background: white; padding: 16px; border-radius: 12px; text-align: center; border: 1px solid #e0e0e0;">
+                                <div style="font-size: 24px; font-weight: 700; color: #6C63FF;">847</div>
+                                <div style="font-size: 12px; color: #666; margin-top: 4px;">Users</div>
+                            </div>
+                            <div style="flex: 1; background: white; padding: 16px; border-radius: 12px; text-align: center; border: 1px solid #e0e0e0;">
+                                <div style="font-size: 24px; font-weight: 700; color: #FFD369;">4.8</div>
+                                <div style="font-size: 12px; color: #666; margin-top: 4px;">Rating</div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: #6C63FF; color: white; padding: 16px; border-radius: 12px; text-align: center; font-size: 16px; font-weight: 600; margin-bottom: 24px;">
+                            📥 Install from Play Store
+                        </div>
+                        
+                        <div style="font-size: 15px; font-weight: 600; color: #1A1A1A; margin-bottom: 12px;">👥 Who Uses This</div>
+                        <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;">
+                            <div style="min-width: 60px; text-align: center;">
+                                <div style="width: 56px; height: 56px; border-radius: 28px; background: #6C63FF; margin-bottom: 6px;"></div>
+                                <div style="font-size: 11px; color: #666;">Alex</div>
+                            </div>
+                            <div style="min-width: 60px; text-align: center;">
+                                <div style="width: 56px; height: 56px; border-radius: 28px; background: #FFD369; margin-bottom: 6px;"></div>
+                                <div style="font-size: 11px; color: #666;">Sarah</div>
+                            </div>
+                            <div style="min-width: 60px; text-align: center;">
+                                <div style="width: 56px; height: 56px; border-radius: 28px; background: #FF6B9D; margin-bottom: 6px;"></div>
+                                <div style="font-size: 11px; color: #666;">Mike</div>
+                            </div>
+                            <div style="min-width: 60px; text-align: center;">
+                                <div style="width: 56px; height: 56px; border-radius: 28px; background: #4ECDC4; margin-bottom: 6px;"></div>
+                                <div style="font-size: 11px; color: #666;">Emma</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-bar">
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- App Comments Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>← Comments</h2>
+                    </div>
+                    <div class="screen-content">
+                        <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e0e0e0;">
+                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                <div style="width: 40px; height: 40px; border-radius: 20px; background: #6C63FF; margin-right: 12px;"></div>
+                                <div>
+                                    <div style="font-size: 14px; font-weight: 600; color: #1A1A1A;">Alex Chen</div>
+                                    <div style="font-size: 12px; color: #999;">2h ago</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 14px; color: #333; line-height: 1.5;">
+                                How do you use Notion for project management? I'm trying to set up a better workflow 🤔
+                            </div>
+                            <div style="display: flex; gap: 16px; margin-top: 12px; font-size: 13px; color: #666;">
+                                <div>❤️ 12</div>
+                                <div>💬 Reply</div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e0e0e0;">
+                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                <div style="width: 40px; height: 40px; border-radius: 20px; background: #FFD369; margin-right: 12px;"></div>
+                                <div>
+                                    <div style="font-size: 14px; font-weight: 600; color: #1A1A1A;">Sarah Miller</div>
+                                    <div style="font-size: 12px; color: #999;">5h ago</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 14px; color: #333; line-height: 1.5;">
+                                I love using Notion databases! Great for tracking tasks and organizing docs in one place 📚✨
+                            </div>
+                            <div style="display: flex; gap: 16px; margin-top: 12px; font-size: 13px; color: #666;">
+                                <div>❤️ 24</div>
+                                <div>💬 Reply</div>
+                            </div>
+                        </div>
+                        
+                        <div style="position: fixed; bottom: 80px; left: 0; right: 0; padding: 16px; background: #F0F2FF;">
+                            <div style="display: flex; gap: 12px;">
+                                <div style="flex: 1; background: white; border-radius: 24px; padding: 12px 20px; border: 1px solid #e0e0e0; font-size: 14px; color: #999;">
+                                    Add a comment...
+                                </div>
+                                <div style="width: 48px; height: 48px; border-radius: 24px; background: #6C63FF; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">
+                                    →
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-bar">
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile with Bio Links Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>Profile</h2>
+                        <div class="menu-button">⋮</div>
+                    </div>
+                    <div class="screen-content">
+                        <div class="profile-header">
+                            <div class="profile-avatar">J</div>
+                            <div class="profile-name">John Doe</div>
+                            <div class="profile-username">@johndoe</div>
+                            <div class="profile-bio">📱 Mobile Developer | 🎨 Design Enthusiast</div>
+                            
+                            <div style="display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap;">
+                                <div style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 10px 16px; border-radius: 10px; display: flex; align-items: center; gap: 8px; color: white; font-size: 13px; font-weight: 600;">
+                                    <svg style="width: 16px; height: 16px; fill: white;" viewBox="0 0 24 24"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4c0 3.2-2.6 5.8-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8C2 4.6 4.6 2 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8c1.99 0 3.6-1.61 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg>
+                                    Instagram
+                                </div>
+                                <div style="background: #1DA1F2; padding: 10px 16px; border-radius: 10px; display: flex; align-items: center; gap: 8px; color: white; font-size: 13px; font-weight: 600;">
+                                    <svg style="width: 16px; height: 16px; fill: white;" viewBox="0 0 24 24"><path d="M22.46 6c-.85.38-1.76.63-2.72.75 1-.6 1.73-1.53 2.09-2.65-.92.55-1.95.95-3.03 1.17-.87-.93-2.11-1.51-3.48-1.51-2.64 0-4.77 2.14-4.77 4.77 0 .37.04.74.13 1.09-3.97-.2-7.48-2.1-9.83-4.99-.42.71-.66 1.54-.66 2.43 0 1.66.84 3.12 2.13 3.98-.78-.02-1.52-.24-2.17-.59v.06c0 2.32 1.64 4.25 3.82 4.69-.4.11-.82.17-1.26.17-.31 0-.61-.03-.91-.09.61 1.92 2.39 3.32 4.5 3.36-1.65 1.3-3.73 2.07-5.99 2.07-.39 0-.77-.02-1.15-.07 2.13 1.37 4.66 2.17 7.38 2.17 8.85 0 13.69-7.33 13.69-13.69 0-.21 0-.42-.01-.63.94-.68 1.76-1.53 2.4-2.5z"/></svg>
+                                    Twitter
+                                </div>
+                                <div style="background: #FF0000; padding: 10px 16px; border-radius: 10px; display: flex; align-items: center; gap: 8px; color: white; font-size: 13px; font-weight: 600;">
+                                    <svg style="width: 16px; height: 16px; fill: white;" viewBox="0 0 24 24"><path d="M10 15l5.19-3L10 9v6m11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 19c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 5c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z"/></svg>
+                                    YouTube
+                                </div>
+                            </div>
+                            
+                            <div class="profile-stats">
+                                <div class="stat">
+                                    <div class="stat-number">1.2K</div>
+                                    <div class="stat-label">Followers</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-number">847</div>
+                                    <div class="stat-label">Following</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-number">24</div>
+                                    <div class="stat-label">Apps</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-bar">
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </div>
+                        <div class="tab">
+                            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                        </div>
+                        <div class="tab active">
+                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <div style="text-align: center; color: white; margin-top: 60px; opacity: 0.9;">
+            <h3 style="font-size: 24px; margin-bottom: 16px;">✨ Tüm 17 Mobil Ekran - Yeni Özellikler ile</h3>
+            <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; max-width: 900px; margin: 20px auto;">
+                <div style="background: rgba(255,255,255,0.1); padding: 16px 24px; border-radius: 12px;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">⭕</div>
+                    <div style="font-weight: 600;">Gerçek App Logoları</div>
+                    <div style="font-size: 14px; opacity: 0.9;">Instagram, Spotify, WhatsApp, Netflix...</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 16px 24px; border-radius: 12px;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">🎨</div>
+                    <div style="font-weight: 600;">Orijinal Renk Şemaları</div>
+                    <div style="font-size: 14px; opacity: 0.9;">Her app kendi brand colors ile</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 16px 24px; border-radius: 12px;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📱</div>
+                    <div style="font-weight: 600;">Apple Tab Bar</div>
+                    <div style="font-size: 14px; opacity: 0.9;">Icon-only navigation, glassmorphism</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 16px 24px; border-radius: 12px;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">✨</div>
+                    <div style="font-weight: 600;">Circular Perfect Icons</div>
+                    <div style="font-size: 14px; opacity: 0.9;">54x54 & 56x56 with shadows</div>
+                </div>
+            </div>
+            <p style="margin-top: 30px; font-size: 14px;">
+                🔗 <a href="/screens.html" style="color: #FFD369; text-decoration: none; font-weight: 600;">View Technical Documentation</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

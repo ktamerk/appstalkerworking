@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appstalker - New Features Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+        
+        .header h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 20px;
+            opacity: 0.95;
+        }
+        
+        .screens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+        }
+        
+        .phone-frame {
+            background: #1A1A1A;
+            border-radius: 40px;
+            padding: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        
+        .phone-notch {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 25px;
+            background: #1A1A1A;
+            border-radius: 0 0 20px 20px;
+            z-index: 10;
+        }
+        
+        .screen {
+            background: #F0F2FF;
+            border-radius: 30px;
+            overflow: hidden;
+            height: 700px;
+            position: relative;
+        }
+        
+        .screen-title {
+            background: white;
+            padding: 50px 20px 20px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .screen-title h2 {
+            font-size: 24px;
+            color: #1A1A1A;
+            font-weight: 700;
+        }
+        
+        .screen-content {
+            padding: 16px;
+            overflow-y: auto;
+            height: calc(100% - 90px);
+        }
+        
+        .user-card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(108,99,255,0.12);
+        }
+        
+        .back-link {
+            text-align: center;
+            margin-top: 40px;
+        }
+        
+        .back-link a {
+            color: #FFD369;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ New Features Preview</h1>
+            <p>8 Exciting Features Coming to Appstalker</p>
+        </div>
+        
+        <div class="screens-grid">
+            <!-- Recommended for You Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>✨ For You</h2>
+                    </div>
+                    <div class="screen-content">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 16px; margin-bottom: 20px; color: white;">
+                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Based on your apps</div>
+                            <div style="font-size: 20px; font-weight: 700;">Apps we think you'll love</div>
+                        </div>
+                        
+                        <div class="user-card">
+                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                <div style="width: 64px; height: 64px; border-radius: 32px; background: linear-gradient(45deg, #667eea, #764ba2); margin-right: 14px;"></div>
+                                <div>
+                                    <div style="font-size: 15px; font-weight: 600; color: #1A1A1A;">Notion</div>
+                                    <div style="font-size: 13px; color: #666;">📊 Productivity</div>
+                                    <div style="font-size: 12px; color: #6C63FF; margin-top: 4px;">847 users • 95% match</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <div style="flex: 1; background: #F0F2FF; color: #6C63FF; padding: 10px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: 600;">View Details</div>
+                                <div style="flex: 1; background: #6C63FF; color: white; padding: 10px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: 600;">Get App</div>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; padding: 40px 20px; background: rgba(108,99,255,0.05); border-radius: 12px;">
+                            <div style="font-size: 40px; margin-bottom: 16px;">🎯</div>
+                            <div style="font-size: 16px; font-weight: 600; color: #1A1A1A; margin-bottom: 8px;">Smart Recommendations</div>
+                            <div style="font-size: 13px; color: #666; line-height: 1.5;">Algorithm analyzes your apps and suggests perfect matches based on similar users</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- App Detail Page -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>← Notion</h2>
+                    </div>
+                    <div class="screen-content">
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <div style="width: 100px; height: 100px; border-radius: 24px; background: linear-gradient(45deg, #667eea, #764ba2); margin: 0 auto 16px;"></div>
+                            <div style="font-size: 24px; font-weight: 700; color: #1A1A1A; margin-bottom: 4px;">Notion</div>
+                            <div style="font-size: 14px; color: #666;">📊 Productivity</div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+                            <div style="flex: 1; background: white; padding: 16px; border-radius: 12px; text-align: center; border: 1px solid #e0e0e0;">
+                                <div style="font-size: 24px; font-weight: 700; color: #6C63FF;">847</div>
+                                <div style="font-size: 12px; color: #666; margin-top: 4px;">Users</div>
+                            </div>
+                            <div style="flex: 1; background: white; padding: 16px; border-radius: 12px; text-align: center; border: 1px solid #e0e0e0;">
+                                <div style="font-size: 24px; font-weight: 700; color: #FFD369;">4.8</div>
+                                <div style="font-size: 12px; color: #666; margin-top: 4px;">Rating</div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: #6C63FF; color: white; padding: 16px; border-radius: 12px; text-align: center; font-size: 16px; font-weight: 600; margin-bottom: 16px;">
+                            📥 Install from Play Store
+                        </div>
+                        
+                        <div style="text-align: center; padding: 30px 20px; background: rgba(108,99,255,0.05); border-radius: 12px;">
+                            <div style="font-size: 36px; margin-bottom: 12px;">📱</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #1A1A1A;">App Details & Stats</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 8px;">See who uses each app + direct install links</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments Screen -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>💬 Comments</h2>
+                    </div>
+                    <div class="screen-content">
+                        <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e0e0e0;">
+                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                                <div style="width: 40px; height: 40px; border-radius: 20px; background: #6C63FF; margin-right: 12px;"></div>
+                                <div>
+                                    <div style="font-size: 14px; font-weight: 600; color: #1A1A1A;">Alex Chen</div>
+                                    <div style="font-size: 12px; color: #999;">2h ago</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 14px; color: #333; line-height: 1.5;">
+                                How do you use Notion for project management? 🤔
+                            </div>
+                            <div style="display: flex; gap: 16px; margin-top: 12px; font-size: 13px; color: #666;">
+                                <div>❤️ 12</div>
+                                <div>💬 Reply</div>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; padding: 50px 20px; background: rgba(108,99,255,0.05); border-radius: 12px;">
+                            <div style="font-size: 40px; margin-bottom: 16px;">💭</div>
+                            <div style="font-size: 16px; font-weight: 600; color: #1A1A1A; margin-bottom: 8px;">App Q&A</div>
+                            <div style="font-size: 13px; color: #666; line-height: 1.5;">"Notion nasıl kullanıyorsun?" tarzı app-specific discussions</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bio Links -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>🔗 Bio Links</h2>
+                    </div>
+                    <div class="screen-content">
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <div style="width: 100px; height: 100px; border-radius: 50px; background: #6C63FF; margin: 0 auto 16px;"></div>
+                            <div style="font-size: 24px; font-weight: 700; color: #1A1A1A; margin-bottom: 4px;">John Doe</div>
+                            <div style="font-size: 14px; color: #666;">@johndoe</div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px;">
+                            <div style="background: linear-gradient(45deg, #f09433, #dc2743, #bc1888); padding: 10px 16px; border-radius: 10px; color: white; font-size: 13px; font-weight: 600;">
+                                📸 Instagram
+                            </div>
+                            <div style="background: #1DA1F2; padding: 10px 16px; border-radius: 10px; color: white; font-size: 13px; font-weight: 600;">
+                                🐦 Twitter
+                            </div>
+                            <div style="background: #FF0000; padding: 10px 16px; border-radius: 10px; color: white; font-size: 13px; font-weight: 600;">
+                                ▶️ YouTube
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; padding: 40px 20px; background: rgba(108,99,255,0.05); border-radius: 12px;">
+                            <div style="font-size: 40px; margin-bottom: 16px;">🌐</div>
+                            <div style="font-size: 16px; font-weight: 600; color: #1A1A1A; margin-bottom: 8px;">Social Links</div>
+                            <div style="font-size: 13px; color: #666; line-height: 1.5;">Instagram, Twitter, YouTube + blog bağlantıları</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- More Features Info -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="screen-title">
+                        <h2>📊 Coming Soon</h2>
+                    </div>
+                    <div class="screen-content">
+                        <div style="background: white; padding: 20px; border-radius: 16px; margin-bottom: 16px;">
+                            <div style="font-size: 32px; margin-bottom: 12px;">📅</div>
+                            <div style="font-size: 18px; font-weight: 700; color: #1A1A1A; margin-bottom: 8px;">Installation Timeline</div>
+                            <div style="font-size: 14px; color: #666; line-height: 1.5;">
+                                "Sen Instagram'ı 2020'de yüklemişsin" - App history visualization
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 20px; border-radius: 16px; margin-bottom: 16px;">
+                            <div style="font-size: 32px; margin-bottom: 12px;">👥</div>
+                            <div style="font-size: 18px; font-weight: 700; color: #1A1A1A; margin-bottom: 8px;">Similar Users</div>
+                            <div style="font-size: 14px; color: #666; line-height: 1.5;">
+                                "95% match with Alex's profile" - Connect with app twins
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 20px; border-radius: 16px; margin-bottom: 16px;">
+                            <div style="font-size: 32px; margin-bottom: 12px;">📬</div>
+                            <div style="font-size: 18px; font-weight: 700; color: #1A1A1A; margin-bottom: 8px;">Digest Notifications</div>
+                            <div style="font-size: 14px; color: #666; line-height: 1.5;">
+                                "This week: 5 friends installed new apps" - Spam yerine özet
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 20px; border-radius: 16px;">
+                            <div style="font-size: 32px; margin-bottom: 12px;">🎉</div>
+                            <div style="font-size: 18px; font-weight: 700; color: #1A1A1A; margin-bottom: 8px;">Milestones</div>
+                            <div style="font-size: 14px; color: #666; line-height: 1.5;">
+                                "10 people discovered apps from you!" - Celebration events
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="back-link">
+            <a href="/mobile-gallery.html">← Back to Main Gallery</a>
+        </div>
+    </div>
+</body>
+</html>
