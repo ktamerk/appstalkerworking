@@ -1,118 +1,42 @@
 #!/bin/bash
-# Appstalker - Quick Deployment Commands
-# Copy-paste these commands in order
+# Appstalker - Quick Commands
+# Bu script sadece adimlari ekrana yazdirir; istedigin satirlari kopyalayip terminaline gecirebilirsin.
 
-echo "=== APPSTALKER DEPLOYMENT QUICK REFERENCE ==="
-echo ""
+set -euo pipefail
 
-# ============================================
-# ADIM 1: GIT YAPÝLANDIRMASI (Replit Shell)
-# ============================================
-echo "## STEP 1: Git Configuration"
-git config --global user.name "YOUR_NAME"
-git config --global user.email "your_email@example.com"
+step() {
+  echo ""
+  echo "=== $1 ==="
+}
 
-# ============================================
-# ADIM 2: GITHUB'A PUSH (Replit Shell)
-# ============================================
-echo "## STEP 2: Push to GitHub"
-git init
-git add .
-git commit -m "Initial commit: Appstalker MVP with Premium UI/UX"
-git remote add origin https://github.com/USERNAME/appstalkerv1.git
-git branch -M main
-git push -u origin main
+step "0) Repo"
+echo "git clone https://github.com/ktamerk/appstalkerworking.git"
+echo "cd appstalkerworking"
 
-# Token ile push:
-# git remote set-url origin https://YOUR_TOKEN@github.com/USERNAME/appstalkerv1.git
-# git push -u origin main
+step "1) Backend kurulum"
+echo "npm install"
+echo "cp .env.example .env  # yoksa .env dosyasini kendin olustur"
+echo "# DATABASE_URL ve diger degiskenleri doldur"
+echo "npm run db:push"
+echo "npm run dev  # http://localhost:5000"
 
-# ============================================
-# ADIM 3: CLONE & OPEN (Bilgisayarınız)
-# ============================================
-echo "## STEP 3: Clone and Open in VS Code"
-cd ~/Desktop
-git clone https://github.com/USERNAME/appstalkerv1.git
-cd appstalkerv1
-code .
+step "2) Opsiyonel seed"
+echo "npx ts-node -r dotenv/config server/scripts/createDemoUser.ts"
+echo "npx ts-node -r dotenv/config server/scripts/seedDummyUsers.ts"
 
-# ============================================
-# ADIM 4: ANDROID SETUP (Bilgisayarınız)
-# ============================================
-echo "## STEP 4: Android Setup"
+step "3) Mobil kurulum"
+echo "cd mobile"
+echo "npm install"
+echo "npx expo run:android      # custom dev client"
+echo "npx expo start --dev-client"
 
-# React Native CLI kur
-npm install -g react-native-cli
-
-# Mobile klasörüne git
-cd mobile
-
-# Expo'dan React Native CLI'ye geç (SEÇENEK 1)
-npx expo prebuild
-
-# VEYA sıfırdan React Native projesi (SEÇENEK 2)
-# npx react-native init Appstalker
-# cd Appstalker
-# (Sonra src klasörünü buraya kopyala)
-
-# Dependencies kur
-npm install
-
-# ============================================
-# ADIM 5: BACKEND ÇALIŞTIR (Terminal 1)
-# ============================================
-echo "## STEP 5: Run Backend"
-cd server
-npm install
-npm run dev
-# Backend runs on http://localhost:5000
-
-# ============================================
-# ADIM 6: METRO BUNDLER (Terminal 2)
-# ============================================
-echo "## STEP 6: Start Metro Bundler"
-cd mobile
-npx react-native start
-# veya
-# npm start
-
-# ============================================
-# ADIM 7: ANDROID EMULATOR (Terminal 3)
-# ============================================
-echo "## STEP 7: Start Android Emulator"
-
-# Emulator listesi
-emulator -list-avds
-
-# Emulator başlat (isim değiştir!)
-emulator -avd Pixel_6_API_33
-
-# ============================================
-# ADIM 8: APP ÇALIÞTIR (Terminal 4)
-# ============================================
-echo "## STEP 8: Run App on Android"
-cd mobile
-npx react-native run-android
-
-# ============================================
-# TROUBLESHOOTING
-# ============================================
-echo "## Troubleshooting Commands"
-
-# Gradle clean
-# cd mobile/android && ./gradlew clean && cd ..
-
-# Metro cache temizle
-# npx react-native start --reset-cache
-
-# Port kill (8081)
-# lsof -ti:8081 | xargs kill -9  # macOS/Linux
-# netstat -ano | findstr :8081   # Windows
-
-# Node modules temizle
-# rm -rf node_modules package-lock.json
-# npm install
+step "4) Faydal� komutlar"
+echo "adb reverse tcp:5000 tcp:5000   # fiziksel cihaz"
+echo "netstat -ano | findstr 5000     # Windows port kontrolu"
+echo "taskkill /PID <pid> /F          # portu kapat"
+echo "cd mobile && npx expo start --dev-client --clear   # Metro cache"
 
 echo ""
-echo "=== DEPLOYMENT COMPLETE! ==="
-echo "App should be running on Android Emulator"
+echo "-> Backend: npm run dev"
+echo "-> Mobile:  npx expo run:android (bir defa) / npx expo start --dev-client"
+echo "-> DB:      npm run db:push | npm run db:studio"
