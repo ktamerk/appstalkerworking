@@ -1,291 +1,265 @@
-import React, { useCallback, useState, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Image, Alert, Linking } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Linking, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config/api';
 import { getImageSource } from '../../utils/iconHelpers';
 
-const formatCount = (count: number): string => {
-  if (count >= 1000000) {
-    return `${(count / 1000000).toFixed(1)}M`;
-  }
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}K`;
-  }
-  return count.toString();
+const formatCount = (count: number) => {
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
+  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
+  return `${count}`;
 };
 
 export default function ProfileScreen({ route, navigation }: any) {
+  const usernameParam = route?.params?.username;
   const [profile, setProfile] = useState<any>(null);
   const [userInfo, setUserInfo] = useState<any>(null);
-  const [apps, setApps] = useState([]);
+  const [apps, setApps] = useState<any[]>([]);
+  const [similarUsers, setSimilarUsers] = useState<any[]>([]);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const username = route?.params?.username;
-  const isOwnProfile = !username;
-  const targetUsername = username ?? userInfo?.username;
 
-  useLayoutEffect(() => {
-    if (!username) {
-      navigation.setOptions({
-        headerRight: () => (
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Settings')}
-            style={{ marginRight: 15 }}
-          >
-            <View style={styles.menuButton}>
-              <Text style={styles.menuButtonText}>⋮</Text>
-            </View>
-          </TouchableOpacity>
-        ),
-      });
-    }
-  }, [navigation, username]);
+  const isOwnProfile = !usernameParam;
+  const targetUsername = usernameParam ?? userInfo?.username;
 
-  useFocusEffect(
-    useCallback(() => {
-      loadProfile();
-    }, [username])
-  );
-
-  const loadProfile = async () => {
+  const fetchProfile = async () => {
     try {
-      let response;
-      if (username) {
-        response = await api.get(API_ENDPOINTS.PROFILE.USER(username));
-      } else {
-        response = await api.get(API_ENDPOINTS.PROFILE.ME);
-      }
+      const response = usernameParam
+        ? await api.get(API_ENDPOINTS.PROFILE.USER(usernameParam))
+        : await api.get(API_ENDPOINTS.PROFILE.ME);
 
       setProfile(response.data.profile);
       setUserInfo(response.data.user);
-      setIsFollowing(Boolean(response.data.profile?.isFollowing));
       setApps(response.data.apps || []);
+      setIsFollowing(Boolean(response.data.profile?.isFollowing));
+
+      if (!usernameParam) {
+        const similarResponse = await api.get(API_ENDPOINTS.SOCIAL.SIMILAR);
+        setSimilarUsers(similarResponse.data.users || []);
+      } else {
+        setSimilarUsers([]);
+      }
     } catch (error) {
-      console.error('Load profile error:', error);
+      console.error('Load profile error', error);
+      Alert.alert('Error', 'Failed to load profile');
     } finally {
       setLoading(false);
     }
   };
 
-  const openFollowers = () => {
-    if (!profile) return;
-    navigation.navigate('FollowersList', {
-      username: username ? targetUsername : undefined,
-      type: 'followers',
-      title: `${profile.displayName}'s Followers`,
-    });
-  };
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [usernameParam])
+  );
 
-  const openFollowing = () => {
+  const navigateFollowers = (type: 'followers' | 'following') => {
     if (!profile) return;
     navigation.navigate('FollowersList', {
-      username: username ? targetUsername : undefined,
-      type: 'following',
-      title: `${profile.displayName}'s Following`,
+      username: usernameParam ? targetUsername : undefined,
+      type,
     });
   };
 
   const handleFollowToggle = async () => {
-    if (!userInfo?.id) return;
+    const targetId = userInfo?.id ?? profile?.userId ?? profile?.id;
+    if (!targetId) return;
     setActionLoading(true);
     try {
       if (isFollowing) {
-        await api.delete(API_ENDPOINTS.SOCIAL.UNFOLLOW(userInfo.id));
+        await api.delete(API_ENDPOINTS.SOCIAL.UNFOLLOW(targetId));
         setIsFollowing(false);
         setProfile((prev: any) =>
-          prev
-            ? {
-                ...prev,
-                followersCount: Math.max(0, (prev.followersCount || 0) - 1),
-              }
-            : prev
+          prev ? { ...prev, followersCount: Math.max(0, (prev.followersCount || 0) - 1) } : prev
         );
       } else {
-        await api.post(API_ENDPOINTS.SOCIAL.FOLLOW(userInfo.id));
+        await api.post(API_ENDPOINTS.SOCIAL.FOLLOW(targetId));
         setIsFollowing(true);
         setProfile((prev: any) =>
-          prev
-            ? {
-                ...prev,
-                followersCount: (prev.followersCount || 0) + 1,
-              }
-            : prev
+          prev ? { ...prev, followersCount: (prev.followersCount || 0) + 1 } : prev
         );
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.error || 'Failed to update follow state');
+      Alert.alert('Error', error.response?.data?.error || 'Failed to update follow status');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const openSettings = () => {
-    navigation.navigate('Settings');
-  };
-
   const handleLinkPress = (url?: string | null) => {
     if (!url) return;
-    Linking.openURL(url).catch(() => {
-      Alert.alert('Error', 'Unable to open link');
-    });
+    Linking.openURL(url).catch(() => Alert.alert('Error', 'Unable to open link'));
   };
 
-  const renderApp = ({ item }: any) => {
-    const iconSource = getImageSource(item.appIcon);
+  if (loading || !profile) {
     return (
-      <View style={styles.appCard}>
-        <View style={styles.appIconWrapper}>
-          {iconSource ? (
-            <Image
-              source={{ uri: iconSource }}
-              style={styles.appIconImage}
-            />
-          ) : (
-            <View style={styles.appIcon}>
-              <Text style={styles.appIconText}>{item.appName[0]}</Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.appInfo}>
-          <Text style={styles.appName}>{item.appName}</Text>
-        </View>
-      </View>
-    );
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>Loading...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator color="#6F61F4" />
       </View>
     );
   }
 
-  if (!profile) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>Profile not found</Text>
-      </View>
-    );
-  }
+  const filteredApps = apps;
+  const avatarSource = getImageSource(profile.avatarUrl);
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        {isOwnProfile && (
-          <TouchableOpacity style={styles.settingsFab} onPress={openSettings}>
-            <Text style={styles.menuButtonText}>⋮</Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.topNav}>
+        {usernameParam ? (
+          <TouchableOpacity style={styles.navButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={22} color="#111" />
           </TouchableOpacity>
-        )}
-        <View style={styles.avatarRow}>
-          {profile.avatarUrl ? (
-            <View style={styles.avatarContainer}>
-              <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImage} />
-            </View>
-          ) : (
-            <View style={styles.avatarContainer}>
-              <View style={[styles.avatar, styles.gradientAvatar]}>
-                <Text style={styles.avatarText}>
-                  {profile.displayName[0].toUpperCase()}
-                </Text>
-              </View>
-            </View>
-          )}
-          
-          <View style={styles.statsCompact}>
-            <TouchableOpacity style={styles.statCompact} onPress={openFollowers}>
-              <Text style={styles.statValueCompact}>{formatCount(profile.followersCount || 0)}</Text>
-              <Text style={styles.statLabelCompact}>Followers</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.statCompact} onPress={openFollowing}>
-              <Text style={styles.statValueCompact}>{formatCount(profile.followingCount || 0)}</Text>
-              <Text style={styles.statLabelCompact}>Following</Text>
-            </TouchableOpacity>
-            <View style={styles.statCompact}>
-              <Text style={styles.statValueCompact}>{formatCount(apps.length)}</Text>
-              <Text style={styles.statLabelCompact}>Visible Apps</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.profileInfo}>
-          <Text style={styles.displayName}>{profile.displayName}</Text>
-          {targetUsername && <Text style={styles.username}>@{targetUsername}</Text>}
-          {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
-          {profile.links && profile.links.length > 0 && (
-            <View style={styles.linksContainer}>
-              {profile.links.map((link: any) => (
-                <TouchableOpacity
-                  key={link.id}
-                  style={styles.linkChip}
-                  onPress={() => handleLinkPress(link.url)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.linkChipText}>{link.label || link.platform}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {isOwnProfile ? (
-          <>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[styles.editButton, styles.editButtonHalf]}
-                onPress={() => navigation.navigate('EditProfile')}
-              >
-                <Text style={styles.editButtonText}>Edit Profile</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.editButton, styles.editButtonHalf]}
-                onPress={() => navigation.navigate('ManageApps')}
-              >
-                <Text style={styles.editButtonText}>Manage Apps</Text>
-              </TouchableOpacity>
-            </View>
-          </>
         ) : (
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[
-                styles.followButton,
-                isFollowing && styles.followingButton,
-                actionLoading && styles.buttonDisabled,
-              ]}
-              onPress={handleFollowToggle}
-              disabled={actionLoading}
-            >
-              <Text
-                style={[
-                  styles.followButtonText,
-                  isFollowing && styles.followingButtonText,
-                ]}
-              >
-                {isFollowing ? 'Following' : 'Follow'}
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.navButton} />
+        )}
+        <Text style={styles.navTitle}>{targetUsername ?? profile.displayName}</Text>
+        {isOwnProfile ? (
+          <TouchableOpacity style={styles.navButton} onPress={() => navigation.navigate('Settings')}>
+            <Ionicons name="settings-outline" size={20} color="#111" />
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.navButton, styles.navButtonDisabled]}>
+            <Ionicons name="settings-outline" size={20} color="#AAA" />
           </View>
         )}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Installed Apps</Text>
-        {apps.length > 0 ? (
-          <FlatList
-            data={apps}
-            renderItem={renderApp}
-            keyExtractor={(item: any) => item.id}
-            scrollEnabled={false}
-          />
+      <View style={styles.profileCard}>
+        <View style={styles.avatarWrapper}>
+          {avatarSource ? (
+            <Image source={{ uri: avatarSource }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarInitial}>{profile.displayName?.[0]?.toUpperCase() || 'A'}</Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.displayName}>{profile.displayName}</Text>
+        {targetUsername && <Text style={styles.username}>@{targetUsername}</Text>}
+        {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
+        {profile.links?.length > 0 && (
+          <View style={styles.linksRow}>
+            {profile.links.map((link: any) => (
+              <TouchableOpacity key={link.id} style={styles.linkChip} onPress={() => handleLinkPress(link.url)}>
+                <Text style={styles.linkChipText}>{link.label || link.platform}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {isOwnProfile ? (
+          <View style={styles.primaryActions}>
+            <TouchableOpacity style={[styles.primaryButton, styles.primaryButtonFilled]} onPress={() => navigation.navigate('ManageApps')}>
+              <Text style={styles.primaryButtonFilledText}>Manage Apps</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.primaryButton, styles.primaryButtonOutline]} onPress={() => navigation.navigate('EditProfile')}>
+              <Text style={styles.primaryButtonOutlineText}>Edit Profile</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.followButton, isFollowing && styles.followButtonFilled]}
+            onPress={handleFollowToggle}
+            disabled={actionLoading}
+          >
+            <Text style={[styles.followButtonText, isFollowing && styles.followButtonTextFilled]}>
+              {isFollowing ? 'Following' : 'Follow'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.statsRow}>
+          <TouchableOpacity style={styles.statCard} onPress={() => navigateFollowers('following')}>
+            <Text style={styles.statValue}>{formatCount(profile.followingCount || 0)}</Text>
+            <Text style={styles.statLabel}>Following</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.statCard} onPress={() => navigateFollowers('followers')}>
+            <Text style={styles.statValue}>{formatCount(profile.followersCount || 0)}</Text>
+            <Text style={styles.statLabel}>Followers</Text>
+          </TouchableOpacity>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{formatCount(apps.length)}</Text>
+            <Text style={styles.statLabel}>Apps</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.appGrid}>
+        {filteredApps.length ? (
+          filteredApps.map((app, index) => {
+            const iconSrc = getImageSource(app.appIcon);
+            return (
+              <TouchableOpacity
+                key={app.id || `${app.packageName}-${index}`}
+                style={styles.appTile}
+                onPress={() =>
+                  navigation.navigate('AppDetail', {
+                    packageName: app.packageName,
+                    appName: app.appName,
+                  })
+                }
+              >
+                <View style={styles.appTileIcon}>
+                  {iconSrc ? (
+                    <Image source={{ uri: iconSrc }} style={styles.appTileImage} />
+                  ) : (
+                    <Text style={styles.appTileInitial}>{app.appName?.[0]?.toUpperCase()}</Text>
+                  )}
+                </View>
+                <Text style={styles.appTileName} numberOfLines={1}>
+                  {app.appName}
+                </Text>
+              </TouchableOpacity>
+            );
+          })
         ) : (
           <Text style={styles.emptyText}>
             {profile.showApps ? 'No apps to display' : 'Apps are hidden'}
           </Text>
         )}
       </View>
+
+      {isOwnProfile && similarUsers.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Similar Stalkers</Text>
+            <Text style={styles.sectionSubtitle}>People sharing your vibe</Text>
+          </View>
+          {similarUsers.map((item) => (
+            <TouchableOpacity
+              key={item.user.id}
+              style={styles.similarCard}
+              onPress={() => navigation.navigate('UserProfile', { username: item.user.username })}
+            >
+              {(() => {
+                const similarAvatar = getImageSource(item.user.avatarUrl);
+                if (similarAvatar) {
+                  return <Image source={{ uri: similarAvatar }} style={styles.similarAvatar} />;
+                }
+                return (
+                  <View style={styles.similarAvatarFallback}>
+                    <Text style={styles.similarAvatarInitial}>{item.user.displayName?.[0]?.toUpperCase()}</Text>
+                  </View>
+                );
+              })()}
+              <View style={styles.similarInfo}>
+                <Text style={styles.similarName}>{item.user.displayName}</Text>
+                <Text style={styles.similarUsername}>@{item.user.username}</Text>
+                <Text style={styles.similarMeta}>
+                  {item.matchScore}% match · {item.overlapCount} shared apps
+                </Text>
+                {item.sharedApps?.length > 0 && (
+                  <Text style={styles.similarShared}>{item.sharedApps.slice(0, 3).join(' • ')}</Text>
+                )}
+              </View>
+              <Text style={styles.matchChip}>Match</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -293,256 +267,313 @@ export default function ProfileScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F2FF',
+    backgroundColor: '#F5F5FF',
   },
-  centerContainer: {
+  content: {
+    paddingBottom: 140,
+  },
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F5F5FF',
   },
-  header: {
-    backgroundColor: '#fff',
-    paddingTop: 16,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  settingsFab: {
-    alignSelf: 'flex-end',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F0F2FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  avatarRow: {
+  topNav: {
+    marginTop: 12,
+    marginHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  navButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ECECFC',
+  },
+  navButtonDisabled: {
+    opacity: 0.4,
+  },
+  navTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111',
+  },
+  profileCard: {
+    margin: 20,
     marginBottom: 12,
+    padding: 20,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
-  avatarContainer: {
-    marginRight: 16,
+  avatarWrapper: {
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    padding: 3,
+    backgroundColor: '#E2E3FF',
+    marginBottom: 18,
   },
-  avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#6C63FF',
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 54,
+  },
+  avatarFallback: {
+    flex: 1,
+    borderRadius: 54,
+    backgroundColor: '#6F61F4',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  gradientAvatar: {
-    borderWidth: 3,
-    borderColor: '#FFD369',
-  },
-  avatarImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 3,
-    borderColor: '#FFD369',
-  },
-  avatarText: {
+  avatarInitial: {
     color: '#fff',
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
-  profileInfo: {
-    marginBottom: 12,
+    fontSize: 36,
+    fontWeight: '700',
   },
   displayName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 4,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#151638',
   },
   username: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    color: '#5C6085',
+    marginTop: 4,
   },
   bio: {
     fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
+    color: '#43445E',
+    textAlign: 'center',
+    marginTop: 12,
   },
-  linksContainer: {
+  linksRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 8,
     gap: 8,
+    marginTop: 12,
+    justifyContent: 'center',
   },
   linkChip: {
-    backgroundColor: '#EEF0FF',
-    borderRadius: 999,
-    paddingHorizontal: 12,
     paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: '#EEF0FF',
   },
   linkChipText: {
-    color: '#4C4ACF',
+    color: '#4E56A1',
     fontWeight: '600',
   },
-  statsCompact: {
+  primaryActions: {
     flexDirection: 'row',
-    flex: 1,
-    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: 18,
+    gap: 12,
   },
-  statCompact: {
+  primaryButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
     alignItems: 'center',
   },
-  statValueCompact: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
+  primaryButtonFilled: {
+    backgroundColor: '#6F61F4',
   },
-  statLabelCompact: {
-    fontSize: 11,
-    color: '#666',
-    marginTop: 2,
+  primaryButtonOutline: {
+    borderWidth: 1.5,
+    borderColor: '#DAD5FF',
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    marginTop: 10,
-    width: '100%',
-    paddingHorizontal: 20,
+  primaryButtonFilledText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  primaryButtonOutlineText: {
+    color: '#4E56A1',
+    fontWeight: '600',
+    fontSize: 15,
   },
   followButton: {
-    flex: 1,
-    backgroundColor: '#6C63FF',
-    borderRadius: 8,
+    marginTop: 18,
+    width: '100%',
+    borderRadius: 16,
     paddingVertical: 12,
     alignItems: 'center',
+    borderWidth: 1.2,
+    borderColor: '#D5D9F5',
+  },
+  followButtonFilled: {
+    backgroundColor: '#6F61F4',
+    borderColor: 'transparent',
   },
   followButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  followingButton: {
-    backgroundColor: '#F0F2FF',
-    borderWidth: 1,
-    borderColor: '#6C63FF',
-  },
-  followingButtonText: {
-    color: '#6C63FF',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  editButton: {
-    backgroundColor: '#6C63FF',
-    borderRadius: 8,
-    padding: 12,
-    paddingHorizontal: 30,
-    alignItems: 'center',
-  },
-  editButtonHalf: {
-    flex: 1,
-    paddingHorizontal: 15,
-    marginHorizontal: 5,
-  },
-  editButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  settingsButton: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    marginTop: 10,
-    marginHorizontal: 20,
-  },
-  settingsButtonText: {
-    color: '#666',
-    fontSize: 14,
+    color: '#4E56A1',
     fontWeight: '600',
+    fontSize: 15,
   },
-  section: {
-    backgroundColor: '#F0F2FF',
-    marginTop: 10,
-    padding: 16,
+  followButtonTextFilled: {
+    color: '#fff',
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 18,
-    paddingLeft: 2,
-  },
-  appCard: {
+  statsRow: {
+    marginTop: 18,
     flexDirection: 'row',
-    padding: 14,
-    backgroundColor: '#fff',
-    marginBottom: 10,
-    borderRadius: 12,
+    width: '100%',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-    borderWidth: 1,
-    borderColor: '#f5f5f5',
   },
-  appIconWrapper: {
-    marginRight: 14,
+  statValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#151638',
   },
-  appIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#6C63FF',
+  statLabel: {
+    fontSize: 12,
+    color: '#5C6085',
+    marginTop: 4,
+  },
+  appGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: 20,
+    marginTop: 20,
+    gap: 16,
+    justifyContent: 'space-between',
+  },
+  appTile: {
+    width: '30%',
+    alignItems: 'center',
+  },
+  appTileIcon: {
+    width: 74,
+    height: 74,
+    borderRadius: 24,
+    backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#EFF0FC',
+    marginBottom: 8,
+    shadowColor: '#7D7FE1',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  appIconImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+  appTileImage: {
+    width: 54,
+    height: 54,
+    borderRadius: 16,
   },
-  appIconText: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: 'bold',
+  appTileInitial: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#5B5EA6',
   },
-  appInfo: {
-    flex: 1,
-  },
-  appName: {
-    fontSize: 17,
+  appTileName: {
+    fontSize: 13,
+    color: '#1F2143',
     fontWeight: '600',
-    color: '#1A1A1A',
   },
   emptyText: {
-    textAlign: 'center',
-    color: '#666',
     fontSize: 14,
-    padding: 20,
+    color: '#7E82A3',
+    textAlign: 'center',
+    width: '100%',
   },
-  menuButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F0F2FF',
+  section: {
+    marginHorizontal: 20,
+    marginTop: 28,
+  },
+  sectionHeader: {
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#16183D',
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: '#7B7FA2',
+    marginTop: 4,
+  },
+  similarCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  similarAvatar: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    marginRight: 12,
+  },
+  similarAvatarFallback: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#E0DEFF',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
-  menuButtonText: {
+  similarAvatarInitial: {
+    color: '#5C5DB5',
+    fontWeight: '700',
     fontSize: 20,
-    color: '#1A1A1A',
+  },
+  similarInfo: {
+    flex: 1,
+  },
+  similarName: {
+    fontSize: 16,
     fontWeight: '600',
+    color: '#16183D',
+  },
+  similarUsername: {
+    fontSize: 13,
+    color: '#9193B8',
+    marginTop: 2,
+  },
+  similarMeta: {
+    fontSize: 12,
+    color: '#6F61F4',
+    marginTop: 6,
+  },
+  similarShared: {
+    fontSize: 12,
+    color: '#9193B8',
+    marginTop: 4,
+  },
+  matchChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#F0EFFF',
+    borderRadius: 999,
+    color: '#6F61F4',
+    fontWeight: '700',
   },
 });

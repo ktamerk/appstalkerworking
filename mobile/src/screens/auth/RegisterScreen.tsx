@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config/api';
 
@@ -41,59 +41,66 @@ export default function RegisterScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.card}>
+        <Text style={styles.logo}>✣</Text>
         <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join the community and discover apps</Text>
-      </View>
+        <Text style={styles.subtitle}>Join the community and share your stack.</Text>
 
-      <View style={styles.formContainer}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputIcon}>✉️</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Email address"
-            placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Email</Text>
+          <View style={styles.inputField}>
+            <TextInput
+              style={styles.input}
+              placeholder="you@email.com"
+              placeholderTextColor="#9FA0C7"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </View>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputIcon}>👤</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Username (unique)"
-            placeholderTextColor="#999"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-          />
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Username</Text>
+          <View style={styles.inputField}>
+            <TextInput
+              style={styles.input}
+              placeholder="@username"
+              placeholderTextColor="#9FA0C7"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+          </View>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputIcon}>✨</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Display Name"
-            placeholderTextColor="#999"
-            value={displayName}
-            onChangeText={setDisplayName}
-          />
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Display name</Text>
+          <View style={styles.inputField}>
+            <TextInput
+              style={styles.input}
+              placeholder="Jordan Lee"
+              placeholderTextColor="#9FA0C7"
+              value={displayName}
+              onChangeText={setDisplayName}
+            />
+          </View>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputIcon}>🔒</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Password (min. 6 characters)"
-            placeholderTextColor="#999"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Password</Text>
+          <View style={styles.inputField}>
+            <TextInput
+              style={styles.input}
+              placeholder="••••••••"
+              placeholderTextColor="#9FA0C7"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+          </View>
         </View>
 
         <TouchableOpacity
@@ -101,91 +108,92 @@ export default function RegisterScreen({ navigation }: any) {
           onPress={handleRegister}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>{loading ? 'Creating Account...' : 'Create Account'}</Text>
+          <Text style={styles.buttonText}>{loading ? 'Creating...' : 'Create Account'}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.linkText}>Already have an account? <Text style={styles.linkBold}>Sign In</Text></Text>
+          <Text style={styles.linkText}>
+            Already have an account? <Text style={styles.linkHighlight}>Sign In</Text>
+          </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: 60,
+    flexGrow: 1,
+    justifyContent: 'center',
+    backgroundColor: '#F6F4FF',
+    padding: 24,
   },
-  headerContainer: {
-    paddingHorizontal: 30,
-    marginBottom: 30,
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 26,
+    padding: 24,
+    shadowColor: '#5644D9',
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  },
+  logo: {
+    fontSize: 32,
+    color: '#5D4CE0',
+    marginBottom: 12,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 8,
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#1F164B',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
+    color: '#6C6990',
+    marginBottom: 24,
   },
-  formContainer: {
-    flex: 1,
-    paddingHorizontal: 30,
+  inputGroup: {
+    marginBottom: 16,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#e0e0e0',
-    borderRadius: 12,
-    marginBottom: 14,
-    paddingHorizontal: 15,
-    backgroundColor: '#f9f9f9',
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#7A78A8',
+    marginBottom: 6,
   },
-  inputIcon: {
-    fontSize: 20,
-    marginRight: 10,
+  inputField: {
+    backgroundColor: '#F2F0FF',
+    borderRadius: 15,
+    paddingHorizontal: 16,
   },
   input: {
-    flex: 1,
-    padding: 16,
-    fontSize: 16,
-    color: '#1A1A1A',
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#1F164B',
   },
   button: {
-    backgroundColor: '#6C63FF',
-    borderRadius: 12,
-    padding: 18,
+    backgroundColor: '#5D4CE0',
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 20,
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    marginTop: 8,
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
-    shadowOpacity: 0,
+    backgroundColor: '#A19CD1',
   },
   buttonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
+    fontSize: 16,
+    fontWeight: '600',
   },
   linkText: {
-    color: '#666',
+    color: '#6D6C95',
     textAlign: 'center',
-    marginTop: 24,
-    fontSize: 15,
+    marginTop: 20,
   },
-  linkBold: {
-    color: '#6C63FF',
-    fontWeight: 'bold',
+  linkHighlight: {
+    color: '#5D4CE0',
+    fontWeight: '700',
   },
 });

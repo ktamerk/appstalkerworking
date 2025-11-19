@@ -4,13 +4,13 @@ import {
   Text,
   StyleSheet,
   Image,
-  FlatList,
   TouchableOpacity,
   Linking,
   RefreshControl,
   TextInput,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
@@ -43,6 +43,7 @@ export default function AppDetailScreen({ route }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [appData, setAppData] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<UserSnippet[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -53,6 +54,7 @@ export default function AppDetailScreen({ route }: any) {
       setLoading(true);
       const response = await api.get(API_ENDPOINTS.APPS.DETAIL(packageName));
       setAppData(response.data.app);
+      setStats(response.data.stats || null);
       setUsers(response.data.users || []);
       setComments(response.data.comments || []);
     } catch (error) {
@@ -90,6 +92,7 @@ export default function AppDetailScreen({ route }: any) {
   };
 
   const handleToggleLike = async (comment: Comment) => {
+    // pessimistic lock to avoid rapid toggles causing race conditions
     if (likeBusy[comment.id]) return;
     const currentlyLiked = Boolean(comment.likedByViewer);
     setLikeBusy((prev) => ({ ...prev, [comment.id]: true }));
@@ -121,63 +124,26 @@ export default function AppDetailScreen({ route }: any) {
     }
   };
 
-  const renderUser = ({ item }: { item: UserSnippet }) => (
-    <TouchableOpacity style={styles.userRow}>
+  const renderUser = (item: UserSnippet) => (
+    <TouchableOpacity style={styles.userCard} key={item.userId}>
       {item.avatarUrl ? (
         <Image source={{ uri: item.avatarUrl }} style={styles.userAvatar} />
       ) : (
         <View style={styles.userAvatarFallback}>
-          <Text style={styles.userAvatarText}>{item.displayName?.[0] || item.username[0]}</Text>
+          <Text style={styles.userAvatarInitial}>{item.displayName?.[0]?.toUpperCase()}</Text>
         </View>
       )}
       <View>
-        <Text style={styles.userName}>{item.displayName || item.username}</Text>
+        <Text style={styles.userName}>{item.displayName}</Text>
         <Text style={styles.userHandle}>@{item.username}</Text>
       </View>
     </TouchableOpacity>
   );
 
-  const renderComment = ({ item }: { item: Comment }) => (
-    <View style={styles.commentContainer}>
-      <View style={styles.commentHeader}>
-        {item.user.avatarUrl ? (
-          <Image source={{ uri: item.user.avatarUrl }} style={styles.commentAvatar} />
-        ) : (
-          <View style={styles.commentAvatarFallback}>
-            <Text style={styles.commentAvatarText}>
-              {item.user.displayName?.[0] || item.user.username[0]}
-            </Text>
-          </View>
-        )}
-        <View>
-          <Text style={styles.commentAuthor}>{item.user.displayName || item.user.username}</Text>
-          <Text style={styles.commentTimestamp}>
-            {new Date(item.createdAt).toLocaleDateString()}
-          </Text>
-        </View>
-      </View>
-      <Text style={styles.commentBody}>{item.body}</Text>
-      <View style={styles.commentActionRow}>
-        <TouchableOpacity
-          style={styles.commentLikeButton}
-          onPress={() => handleToggleLike(item)}
-          disabled={likeBusy[item.id]}
-        >
-          <Ionicons
-            name={item.likedByViewer ? 'heart' : 'heart-outline'}
-            size={18}
-            color={item.likedByViewer ? '#FF5C8D' : '#6C63FF'}
-          />
-          <Text style={styles.likeCount}>{item.likesCount ?? 0}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <Text>Loading...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator color="#6750F8" />
       </View>
     );
   }
@@ -185,65 +151,101 @@ export default function AppDetailScreen({ route }: any) {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} />}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={loadData} />}
     >
-      <View style={styles.header}>
-        <View style={styles.iconPlaceholder}>
+      <View style={styles.heroCard}>
+        <View style={styles.heroRow}>
           {appData?.iconUrl ? (
-            <Image source={{ uri: appData.iconUrl }} style={styles.iconImage} />
+            <Image source={{ uri: appData.iconUrl }} style={styles.appIcon} />
           ) : (
-            <Text style={styles.iconFallback}>{appData?.displayName?.[0] || '?'}</Text>
+            <View style={styles.appIconFallback}>
+              <Text style={styles.appIconInitial}>{(appData?.displayName || appName)[0]}</Text>
+            </View>
           )}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.appName}>{appData?.displayName || appName}</Text>
+            {appData?.category && <Text style={styles.appCategory}>{appData.category}</Text>}
+          </View>
+          <TouchableOpacity style={styles.installButton} onPress={handleInstallPress}>
+            <Ionicons name="cloud-download-outline" size={20} color="#fff" />
+          </TouchableOpacity>
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{appData?.displayName || appName || packageName}</Text>
-          {appData?.category && <Text style={styles.category}>{appData.category}</Text>}
+        <View style={styles.statsRow}>
+          <View style={styles.statPill}>
+            <Text style={styles.statLabel}>Visible Installs</Text>
+            <Text style={styles.statValue}>{stats?.visibleInstallCount ?? 0}</Text>
+          </View>
+          <View style={styles.statPill}>
+            <Text style={styles.statLabel}>Total Installs</Text>
+            <Text style={styles.statValue}>{stats?.totalInstallCount ?? 0}</Text>
+          </View>
         </View>
-        <TouchableOpacity style={styles.installButton} onPress={handleInstallPress}>
-          <Ionicons name="cloud-download-outline" size={20} color="#fff" />
-        </TouchableOpacity>
+        {appData?.description ? (
+          <Text style={styles.description}>{appData.description}</Text>
+        ) : null}
       </View>
 
-      {appData?.description ? (
-        <Text style={styles.description}>{appData.description}</Text>
-      ) : null}
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Who uses it</Text>
-        <Text style={styles.sectionDescription}>Only people you follow will appear here.</Text>
-        {users.length > 0 ? (
-          <FlatList
-            data={users}
-            renderItem={renderUser}
-            keyExtractor={(item) => item.userId}
-            scrollEnabled={false}
-          />
-        ) : (
-          <Text style={styles.emptyText}>No visible users yet.</Text>
-        )}
+      <View style={styles.sectionCard}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Who uses it</Text>
+          <Text style={styles.sectionBadge}>{users.length} friends</Text>
+        </View>
+        {users.length ? users.map(renderUser) : <Text style={styles.emptyText}>No friends found</Text>}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Comments</Text>
-        <View style={styles.commentInputRow}>
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Comments & Tips</Text>
+        <View style={styles.commentInputCard}>
           <TextInput
-            style={styles.commentInput}
-            placeholder="Ask a question or share a tip..."
             value={newComment}
             onChangeText={setNewComment}
+            placeholder="Share how you use this app..."
+            placeholderTextColor="#9FA0C7"
+            style={styles.commentInput}
             multiline
           />
-          <TouchableOpacity style={styles.postButton} onPress={handlePostComment}>
+          <TouchableOpacity style={styles.commentSend} onPress={handlePostComment}>
             <Ionicons name="send" size={18} color="#fff" />
           </TouchableOpacity>
         </View>
-        <FlatList
-          data={comments}
-          renderItem={renderComment}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-          ListEmptyComponent={<Text style={styles.emptyText}>No comments yet.</Text>}
-        />
+
+        {comments.length === 0 && <Text style={styles.emptyText}>No comments yet</Text>}
+
+        {comments.map((comment) => (
+          <View key={comment.id} style={styles.commentCard}>
+            {comment.user.avatarUrl ? (
+              <Image source={{ uri: comment.user.avatarUrl }} style={styles.commentAvatar} />
+            ) : (
+              <View style={styles.commentAvatarFallback}>
+                <Text style={styles.commentAvatarInitial}>
+                  {comment.user.displayName?.[0]?.toUpperCase()}
+                </Text>
+              </View>
+            )}
+            <View style={{ flex: 1 }}>
+              <View style={styles.commentHeader}>
+                <Text style={styles.commentAuthor}>{comment.user.displayName || comment.user.username}</Text>
+                <Text style={styles.commentTime}>
+                  {new Date(comment.createdAt).toLocaleDateString()}
+                </Text>
+              </View>
+              <Text style={styles.commentBody}>{comment.body}</Text>
+              <TouchableOpacity
+                style={styles.likeButton}
+                onPress={() => handleToggleLike(comment)}
+                disabled={likeBusy[comment.id]}
+              >
+                <Ionicons
+                  name={comment.likedByViewer ? 'heart' : 'heart-outline'}
+                  size={16}
+                  color={comment.likedByViewer ? '#F45C84' : '#7A7AA5'}
+                />
+                <Text style={styles.likeCount}>{comment.likesCount || 0}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
       </View>
     </ScrollView>
   );
@@ -252,192 +254,229 @@ export default function AppDetailScreen({ route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F2FF',
-    padding: 16,
+    backgroundColor: '#F8F6FF',
   },
-  centerContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8F6FF',
   },
-  header: {
+  heroCard: {
+    margin: 18,
+    marginBottom: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: '#4127C4',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
+    gap: 14,
   },
-  iconPlaceholder: {
+  appIcon: {
     width: 64,
     height: 64,
-    borderRadius: 16,
-    backgroundColor: '#EAE7FF',
+    borderRadius: 20,
+  },
+  appIconFallback: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: '#E1DEFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
   },
-  iconImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-  },
-  iconFallback: {
+  appIconInitial: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#6C63FF',
+    color: '#4C41A5',
   },
-  title: {
+  appName: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: '#21184B',
   },
-  category: {
+  appCategory: {
     fontSize: 13,
-    color: '#666',
-    marginTop: 4,
+    color: '#7A79A4',
   },
   installButton: {
-    backgroundColor: '#6C63FF',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46,
+    height: 46,
+    borderRadius: 16,
+    backgroundColor: '#5445E5',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 14,
+    marginTop: 14,
+  },
+  statPill: {
+    flex: 1,
+    backgroundColor: '#F0EEFF',
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#7A79A4',
+    textTransform: 'uppercase',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2C235E',
+    marginTop: 4,
   },
   description: {
+    marginTop: 14,
     fontSize: 14,
-    color: '#444',
-    marginBottom: 16,
+    color: '#4B4970',
   },
-  section: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
+  sectionCard: {
+    marginHorizontal: 18,
+    marginTop: 18,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  sectionDescription: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 12,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#888',
-  },
-  userRow: {
+  sectionHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1C1940',
+  },
+  sectionBadge: {
+    fontSize: 12,
+    color: '#7A79A4',
+  },
+  userCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+  },
   userAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    marginRight: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 16,
   },
   userAvatarFallback: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#EAE7FF',
-    marginRight: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: '#E4E2FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  userAvatarText: {
-    fontWeight: 'bold',
-    color: '#6C63FF',
+  userAvatarInitial: {
+    fontWeight: '700',
+    color: '#4A3FE6',
   },
   userName: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
+    color: '#1F1A46',
   },
   userHandle: {
     fontSize: 12,
-    color: '#666',
+    color: '#7A79A4',
   },
-  commentContainer: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  commentAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginRight: 8,
-  },
-  commentAvatarFallback: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#EAE7FF',
-    marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  commentAvatarText: {
-    color: '#6C63FF',
-    fontWeight: '600',
-  },
-  commentAuthor: {
-    fontWeight: '600',
-  },
-  commentTimestamp: {
-    fontSize: 12,
-    color: '#888',
-  },
-  commentBody: {
-    fontSize: 14,
-    color: '#333',
-    marginTop: 4,
-  },
-  commentActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  commentLikeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  likeCount: {
+  emptyText: {
     fontSize: 13,
-    color: '#1A1A1A',
-    marginLeft: 6,
+    color: '#9C9BBA',
   },
-  commentInputRow: {
+  commentInputCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    gap: 10,
+    backgroundColor: '#F5F4FF',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
   },
   commentInput: {
     flex: 1,
     minHeight: 40,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    padding: 10,
-    backgroundColor: '#FAFAFA',
-    marginRight: 8,
+    color: '#1C1940',
   },
-  postButton: {
+  commentSend: {
     width: 42,
     height: 42,
-    borderRadius: 21,
-    backgroundColor: '#6C63FF',
+    borderRadius: 14,
+    backgroundColor: '#4C41A5',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  commentCard: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F1FA',
+  },
+  commentAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+  },
+  commentAvatarFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: '#E5E3FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  commentAvatarInitial: {
+    fontWeight: '700',
+    color: '#4A3FE6',
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  commentAuthor: {
+    fontWeight: '700',
+    color: '#1F1A40',
+  },
+  commentTime: {
+    fontSize: 11,
+    color: '#A1A2C6',
+  },
+  commentBody: {
+    fontSize: 14,
+    color: '#353452',
+    marginTop: 4,
+  },
+  likeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+  },
+  likeCount: {
+    fontSize: 12,
+    color: '#6F6DA0',
   },
 });

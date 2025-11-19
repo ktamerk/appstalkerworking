@@ -1,88 +1,80 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 
 interface SettingsScreenProps {
   navigation: any;
   onLogout: () => void;
 }
 
+const MENU = [
+  {
+    title: 'Liked Profiles',
+    subtitle: 'Profiles you bookmarked',
+    icon: 'heart-outline' as const,
+    route: 'LikedProfiles',
+  },
+  {
+    title: 'Help & Support',
+    subtitle: 'Get help with Appstalker',
+    icon: 'help-circle-outline' as const,
+    route: 'Help',
+  },
+  {
+    title: 'About Appstalker',
+    subtitle: 'Version 1.0.0',
+    icon: 'information-circle-outline' as const,
+    route: 'About',
+  },
+];
+
 export default function SettingsScreen({ navigation, onLogout }: SettingsScreenProps) {
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            await AsyncStorage.multiRemove(['authToken', 'token', 'userId']);
-            onLogout();
-          },
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          await AsyncStorage.multiRemove(['authToken', 'token', 'userId']);
+          onLogout();
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>My Activity</Text>
-        
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('LikedProfiles')}
-        >
-          <Text style={styles.menuIcon}>❤️</Text>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuText}>Liked Profiles</Text>
-            <Text style={styles.menuSubtext}>Profiles you've liked</Text>
-          </View>
-          <Text style={styles.menuArrow}>›</Text>
-        </TouchableOpacity>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+      <View style={styles.hero}>
+        <Text style={styles.logo}>✣</Text>
+        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.subtitle}>Control what others see and manage your account.</Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Support</Text>
-        
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('Help')}
-        >
-          <Text style={styles.menuIcon}>❓</Text>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuText}>Help & Support</Text>
-            <Text style={styles.menuSubtext}>Get help with Appstalker</Text>
-          </View>
-          <Text style={styles.menuArrow}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('About')}
-        >
-          <Text style={styles.menuIcon}>ℹ️</Text>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuText}>About Appstalker</Text>
-            <Text style={styles.menuSubtext}>Version 1.0.0</Text>
-          </View>
-          <Text style={styles.menuArrow}>›</Text>
-        </TouchableOpacity>
+      <View style={styles.card}>
+        {MENU.map((item, index) => (
+          <TouchableOpacity
+            key={item.title}
+            style={[styles.menuItem, index !== MENU.length - 1 && styles.menuDivider]}
+            onPress={() => navigation.navigate(item.route)}
+          >
+            <View style={styles.menuIcon}>
+              <Ionicons name={item.icon} size={20} color="#4B3F94" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.menuTitle}>{item.title}</Text>
+              <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#B7B5D9" />
+          </TouchableOpacity>
+        ))}
       </View>
 
-      <View style={styles.section}>
-        <TouchableOpacity
-          style={[styles.menuItem, styles.logoutButton]}
-          onPress={handleLogout}
-        >
-          <Text style={styles.menuIcon}>🚪</Text>
-          <View style={styles.menuTextContainer}>
-            <Text style={[styles.menuText, styles.logoutText]}>Logout</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.logoutCard} onPress={handleLogout}>
+        <Ionicons name="log-out-outline" size={20} color="#fff" />
+        <Text style={styles.logoutText}>Logout</Text>
+      </TouchableOpacity>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>Discover what apps people use.</Text>
@@ -95,68 +87,87 @@ export default function SettingsScreen({ navigation, onLogout }: SettingsScreenP
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F2FF',
+    backgroundColor: '#F6F4FF',
+    paddingHorizontal: 20,
   },
-  section: {
-    marginTop: 20,
+  hero: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  logo: {
+    fontSize: 32,
+    color: '#5A4FD0',
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#1F1747',
+    marginTop: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#78759F',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    overflow: 'hidden',
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#666',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    borderRadius: 24,
+    paddingHorizontal: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 16,
+  },
+  menuDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F0EFF8',
   },
   menuIcon: {
-    fontSize: 24,
-    marginRight: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: '#F2EFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
   },
-  menuTextContainer: {
-    flex: 1,
-  },
-  menuText: {
+  menuTitle: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 2,
+    fontWeight: '600',
+    color: '#21194D',
   },
-  menuSubtext: {
+  menuSubtitle: {
     fontSize: 13,
-    color: '#999',
+    color: '#8C8AAE',
   },
-  menuArrow: {
-    fontSize: 24,
-    color: '#ccc',
-    fontWeight: '300',
-  },
-  logoutButton: {
-    borderBottomWidth: 0,
+  logoutCard: {
+    marginTop: 24,
+    backgroundColor: '#FF6262',
+    borderRadius: 20,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
   },
   logoutText: {
-    color: '#ff4444',
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
   },
   footer: {
-    padding: 40,
+    marginTop: 30,
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    marginBottom: 4,
+    fontSize: 13,
+    color: '#8C8AAE',
   },
 });

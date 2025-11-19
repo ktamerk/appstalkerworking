@@ -1,5 +1,24 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+const FAQ = [
+  {
+    question: 'How do I share my apps?',
+    answer:
+      'Go to Manage Apps on your profile and toggle which apps are visible. We only share what you approve.',
+  },
+  {
+    question: 'Can I hide specific apps?',
+    answer:
+      'Yes, any app can be hidden at any time. Hidden apps disappear from your followers immediately.',
+  },
+  {
+    question: 'Who can see my apps?',
+    answer:
+      'Only followers you approve can see your visible apps. You can remove followers anytime from your profile.',
+  },
+];
 
 export default function HelpScreen() {
   const openEmail = () => {
@@ -7,63 +26,26 @@ export default function HelpScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Getting Started</Text>
-        <View style={styles.card}>
-          <Text style={styles.question}>How do I share my apps?</Text>
-          <Text style={styles.answer}>
-            Appstalker automatically detects apps installed on your device. You can choose which apps to display on your profile from the "Manage Apps" section.
-          </Text>
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.question}>How do I follow people?</Text>
-          <Text style={styles.answer}>
-            Go to the Search tab, find users, and tap the Follow button on their profile. You'll see their app updates in your feed.
-          </Text>
-        </View>
-      </View>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+      <Text style={styles.title}>Help & Support</Text>
+      <Text style={styles.subtitle}>Answers to common questions and how to reach us.</Text>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Privacy & Security</Text>
-        <View style={styles.card}>
-          <Text style={styles.question}>Can I hide specific apps?</Text>
-          <Text style={styles.answer}>
-            Yes! Go to your Profile → Manage Apps, and toggle off any apps you don't want to share publicly.
-          </Text>
+      {FAQ.map((item) => (
+        <View key={item.question} style={styles.card}>
+          <Text style={styles.cardTitle}>{item.question}</Text>
+          <Text style={styles.cardBody}>{item.answer}</Text>
         </View>
-        <View style={styles.card}>
-          <Text style={styles.question}>Who can see my apps?</Text>
-          <Text style={styles.answer}>
-            Only your followers can see which apps you have installed. You control your follower list by accepting or declining follow requests.
-          </Text>
-        </View>
-      </View>
+      ))}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Features</Text>
-        <View style={styles.card}>
-          <Text style={styles.question}>What are notifications for?</Text>
-          <Text style={styles.answer}>
-            You'll receive real-time notifications when:
-            - Someone you follow installs a new app
-            - Someone follows you
-            - Someone likes your profile
-            - You receive a new friend request
-          </Text>
+      <View style={styles.supportCard}>
+        <View>
+          <Text style={styles.supportTitle}>Need more help?</Text>
+          <Text style={styles.supportBody}>Reach our support team and we'll respond within 24h.</Text>
         </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Contact Support</Text>
-        <View style={styles.card}>
-          <Text style={styles.answer}>
-            Need more help? Contact our support team:
-          </Text>
-          <TouchableOpacity style={styles.button} onPress={openEmail}>
-            <Text style={styles.buttonText}>Email Support</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.supportButton} onPress={openEmail}>
+          <Ionicons name="mail-outline" size={18} color="#fff" />
+          <Text style={styles.supportButtonText}>Email Support</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -72,45 +54,72 @@ export default function HelpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F2FF',
+    backgroundColor: '#F6F4FF',
+    paddingHorizontal: 18,
   },
-  section: {
-    marginTop: 16,
-    paddingHorizontal: 16,
+  title: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#1F1744',
+    marginTop: 24,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 12,
+  subtitle: {
+    fontSize: 14,
+    color: '#7D7AA5',
+    marginTop: 4,
+    marginBottom: 16,
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 20,
+    padding: 18,
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  question: {
+  cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 8,
+    color: '#1F1744',
+    marginBottom: 6,
   },
-  answer: {
+  cardBody: {
     fontSize: 14,
-    color: '#666',
+    color: '#5E5C7E',
     lineHeight: 20,
   },
-  button: {
-    backgroundColor: '#6C63FF',
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 12,
+  supportCard: {
+    backgroundColor: '#E7E2FF',
+    borderRadius: 22,
+    padding: 20,
+    marginTop: 20,
   },
-  buttonText: {
-    color: '#fff',
+  supportTitle: {
     fontSize: 16,
+    fontWeight: '700',
+    color: '#1F1744',
+  },
+  supportBody: {
+    fontSize: 13,
+    color: '#5E5C7E',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  supportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: '#5D4CE0',
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  supportButtonText: {
+    color: '#fff',
     fontWeight: '600',
   },
 });

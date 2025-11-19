@@ -1,14 +1,5 @@
-import React, { useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  FlatList,
-  Switch,
-  Image,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, FlatList, Image } from 'react-native';
 
 interface NewApp {
   packageName: string;
@@ -24,13 +15,15 @@ interface NewAppPromptProps {
   onDismiss: () => void;
 }
 
-export default function NewAppPrompt({
-  visible,
-  apps,
-  onConfirm,
-  onDismiss,
-}: NewAppPromptProps) {
+export default function NewAppPrompt({ visible, apps, onConfirm, onDismiss }: NewAppPromptProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    // whenever modal opens, default to selecting every discovered app
+    if (visible) {
+      setSelected(new Set(apps.map((app) => app.packageName)));
+    }
+  }, [visible, apps]);
 
   const toggleApp = (packageName: string) => {
     setSelected((prev) => {
@@ -44,9 +37,9 @@ export default function NewAppPrompt({
     });
   };
 
-  const selectAll = () => {
-    setSelected(new Set(apps.map((app) => app.packageName)));
-  };
+  if (!visible || apps.length === 0) {
+    return null;
+  }
 
   const handleConfirm = () => {
     onConfirm(Array.from(selected));
@@ -58,88 +51,55 @@ export default function NewAppPrompt({
     onDismiss();
   };
 
-  if (!visible || apps.length === 0) {
-    return null;
-  }
-
   const renderApp = ({ item }: { item: NewApp }) => {
     const isSelected = selected.has(item.packageName);
 
     return (
-      <TouchableOpacity
-        style={styles.appItem}
-        onPress={() => toggleApp(item.packageName)}
-      >
+      <TouchableOpacity style={styles.appItem} onPress={() => toggleApp(item.packageName)}>
         <View style={styles.appInfo}>
           {item.appIcon ? (
             <Image source={{ uri: item.appIcon }} style={styles.appIcon} />
           ) : (
-            <View style={[styles.appIcon, styles.appIconPlaceholder]}>
-              <Text style={styles.appIconText}>{item.appName[0]}</Text>
+            <View style={styles.appIconFallback}>
+              <Text style={styles.appIconInitial}>{item.appName[0]}</Text>
             </View>
           )}
-          <View style={styles.appText}>
+          <View>
             <Text style={styles.appName}>{item.appName}</Text>
-            <Text style={styles.appPackage}>{item.packageName}</Text>
+            <Text style={styles.appMeta}>Tap to toggle visibility</Text>
           </View>
         </View>
-        <Switch
-          value={isSelected}
-          onValueChange={() => toggleApp(item.packageName)}
-          trackColor={{ false: '#ccc', true: '#d4a5f5' }}
-          thumbColor={isSelected ? '#6C63FF' : '#f4f3f4'}
-        />
+        <View style={[styles.togglePill, isSelected ? styles.toggleActive : styles.toggleInactive]}>
+          <Text style={isSelected ? styles.toggleActiveText : styles.toggleInactiveText}>
+            {isSelected ? 'Visible' : 'Hidden'}
+          </Text>
+        </View>
       </TouchableOpacity>
     );
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={handleDismiss}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleDismiss}>
       <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <View style={styles.header}>
-            <Text style={styles.title}>🎉 New Apps Detected!</Text>
-            <Text style={styles.subtitle}>
-              Choose which apps to show on your profile
-            </Text>
-          </View>
+        <View style={styles.sheet}>
+          <Text style={styles.title}>New Apps Detected</Text>
+          <Text style={styles.subtitle}>Choose which apps to show on your profile.</Text>
 
           <FlatList
             data={apps}
             renderItem={renderApp}
             keyExtractor={(item) => item.packageName}
-            style={styles.list}
-            contentContainerStyle={styles.listContent}
+            style={{ maxHeight: 360 }}
+            contentContainerStyle={{ paddingVertical: 8 }}
           />
 
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.selectAllButton} onPress={selectAll}>
-              <Text style={styles.selectAllText}>Select All</Text>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={handleDismiss}>
+              <Text style={styles.buttonSecondaryText}>Not now</Text>
             </TouchableOpacity>
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonSecondary]}
-                onPress={handleDismiss}
-              >
-                <Text style={[styles.buttonText, styles.buttonTextSecondary]}>
-                  Skip
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonPrimary]}
-                onPress={handleConfirm}
-              >
-                <Text style={styles.buttonText}>
-                  Show Selected ({selected.size})
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={[styles.button, styles.buttonPrimary]} onPress={handleConfirm}>
+              <Text style={styles.buttonPrimaryText}>Confirm</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -150,118 +110,114 @@ export default function NewAppPrompt({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
-  modal: {
+  sheet: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-  },
-  header: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingBottom: 30,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 5,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F1A3D',
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
-  list: {
-    maxHeight: 400,
-  },
-  listContent: {
-    padding: 15,
+    fontSize: 13,
+    color: '#7B7AA4',
+    marginTop: 4,
+    marginBottom: 12,
   },
   appItem: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f9f9f9',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F0F8',
   },
   appInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     flex: 1,
   },
   appIcon: {
     width: 48,
     height: 48,
-    borderRadius: 10,
-    marginRight: 12,
+    borderRadius: 16,
   },
-  appIconPlaceholder: {
-    backgroundColor: '#6C63FF',
+  appIconFallback: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: '#E4E2FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  appIconText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  appText: {
-    flex: 1,
+  appIconInitial: {
+    fontWeight: '700',
+    color: '#5D4CE0',
   },
   appName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 2,
+    color: '#1F1A3D',
   },
-  appPackage: {
+  appMeta: {
     fontSize: 12,
-    color: '#999',
+    color: '#8B89B2',
   },
-  actions: {
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
+  togglePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
-  selectAllButton: {
-    alignItems: 'center',
-    paddingVertical: 10,
-    marginBottom: 10,
+  toggleActive: {
+    borderWidth: 1,
+    borderColor: '#5D4CE0',
+    backgroundColor: '#F2EFFF',
   },
-  selectAllText: {
-    color: '#6C63FF',
-    fontSize: 16,
+  toggleInactive: {
+    borderWidth: 1,
+    borderColor: '#E1E0F0',
+    backgroundColor: '#fff',
+  },
+  toggleActiveText: {
+    color: '#5D4CE0',
+    fontWeight: '700',
+  },
+  toggleInactiveText: {
+    color: '#8B89B2',
     fontWeight: '600',
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
+    marginTop: 16,
   },
   button: {
     flex: 1,
-    padding: 15,
-    borderRadius: 10,
+    borderRadius: 16,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   buttonPrimary: {
-    backgroundColor: '#6C63FF',
+    backgroundColor: '#5D4CE0',
   },
   buttonSecondary: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#6C63FF',
+    borderColor: '#DAD8F2',
   },
-  buttonText: {
+  buttonPrimaryText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  buttonTextSecondary: {
-    color: '#6C63FF',
+  buttonSecondaryText: {
+    color: '#665DA7',
+    fontWeight: '600',
   },
 });

@@ -8,7 +8,6 @@ import { getAppCache, saveAppCache } from '../../utils/appCache';
 import NewAppPrompt from '../../components/NewAppPrompt';
 import FollowingFeed from '../../components/FollowingFeed';
 import TrendingFeed from '../../components/TrendingFeed';
-import { useNavigation } from '@react-navigation/native';
 
 interface NewApp {
   packageName: string;
@@ -36,7 +35,7 @@ export default function FeedScreen({ navigation }: any) {
 
       const cachedPackageNames = await getAppCache(userId);
       const installedApps = await getInstalledApps();
-      const currentPackageNames = installedApps.map(app => app.packageName);
+      const currentPackageNames = installedApps.map((app) => app.packageName);
 
       const syncResponse = await syncAppsWithServer(installedApps, api);
 
@@ -55,13 +54,13 @@ export default function FeedScreen({ navigation }: any) {
     try {
       if (selectedPackageNames.length > 0) {
         await api.post(API_ENDPOINTS.APPS.VISIBILITY_BULK, {
-          updates: selectedPackageNames.map(packageName => ({
+          updates: selectedPackageNames.map((packageName) => ({
             packageName,
             isVisible: true,
           })),
         });
       }
-      
+
       setShowNewAppPrompt(false);
       setNewApps([]);
     } catch (error) {
@@ -74,24 +73,33 @@ export default function FeedScreen({ navigation }: any) {
     setNewApps([]);
   };
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
+  const handleSearch = (text: string) => {
+    setSearchQuery(text);
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>🔍</Text>
+  const renderHeader = () => (
+    // shared header used as FlatList header to avoid nesting ScrollView + FlatList
+    <View style={styles.headerWrapper}>
+      <View style={styles.iconRow}>
+        <Text style={styles.logo}>✣</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+          <Text style={styles.settingsIcon}>⚙</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.subtitle}>See what your circle is installing.</Text>
+
+      <View style={styles.searchBar}>
+        <Text style={styles.searchEmoji}>🔎</Text>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search people or apps..."
-          placeholderTextColor="#999"
+          placeholder={activeTab === 'trending' ? 'Search apps...' : 'Search people or apps...'}
+          placeholderTextColor="#A2A3C7"
           value={searchQuery}
           onChangeText={handleSearch}
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => handleSearch('')}>
-            <Text style={styles.clearIcon}>✕</Text>
+            <Text style={styles.clearEmoji}>✕</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -114,19 +122,23 @@ export default function FeedScreen({ navigation }: any) {
           </Text>
         </TouchableOpacity>
       </View>
+    </View>
+  );
 
+  return (
+    <View style={styles.container}>
       {activeTab === 'following' ? (
-        <FollowingFeed navigation={navigation} onRefreshStart={checkForNewApps} />
+        <FollowingFeed
+          navigation={navigation}
+          onRefreshStart={checkForNewApps}
+          ListHeaderComponent={renderHeader}
+          searchQuery={searchQuery}
+        />
       ) : (
-        <TrendingFeed navigation={navigation} />
+        <TrendingFeed navigation={navigation} ListHeaderComponent={renderHeader} searchQuery={searchQuery} />
       )}
 
-      <NewAppPrompt
-        visible={showNewAppPrompt}
-        apps={newApps}
-        onConfirm={handleNewAppsConfirm}
-        onDismiss={handleNewAppsDismiss}
-      />
+      <NewAppPrompt visible={showNewAppPrompt} apps={newApps} onConfirm={handleNewAppsConfirm} onDismiss={handleNewAppsDismiss} />
     </View>
   );
 }
@@ -134,67 +146,70 @@ export default function FeedScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F2FF',
+    backgroundColor: '#F7F4FF',
+    paddingHorizontal: 18,
   },
-  searchContainer: {
+  iconRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 18,
+  },
+  logo: {
+    fontSize: 24,
+    color: '#4E41A8',
+  },
+  settingsIcon: {
+    fontSize: 18,
+    color: '#4E41A8',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#78759B',
+    marginTop: 4,
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 12,
-    borderRadius: 28,
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
+    backgroundColor: '#EEEAFD',
+    marginTop: 18,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
-  searchIcon: {
-    fontSize: 18,
-    marginRight: 10,
+  searchEmoji: {
+    fontSize: 16,
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
-    color: '#1A1A1A',
-    padding: 0,
+    color: '#201747',
+    fontSize: 15,
   },
-  clearIcon: {
-    fontSize: 20,
-    color: '#999',
-    padding: 5,
+  clearEmoji: {
+    fontSize: 16,
+    color: '#B7B6DE',
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 12,
+    backgroundColor: '#ECE9FF',
+    marginTop: 18,
+    borderRadius: 18,
     padding: 4,
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
   tab: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: 'center',
   },
   activeTab: {
-    backgroundColor: '#6C63FF',
+    backgroundColor: '#fff',
   },
   tabText: {
-    fontSize: 15,
+    color: '#7B78A4',
     fontWeight: '600',
-    color: '#666',
   },
   activeTabText: {
-    color: '#fff',
+    color: '#4E41A8',
   },
 });

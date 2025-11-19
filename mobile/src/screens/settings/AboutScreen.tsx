@@ -3,55 +3,39 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 
 export default function AboutScreen() {
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.logo}>📱</Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+      <View style={styles.hero}>
+        <Text style={styles.logo}>✣</Text>
         <Text style={styles.appName}>Appstalker</Text>
         <Text style={styles.version}>Version 1.0.0</Text>
         <Text style={styles.tagline}>Discover what apps people use.</Text>
         <Text style={styles.taglineSecondary}>Find your digital tribe.</Text>
       </View>
 
-      <View style={styles.section}>
+      <View style={styles.card}>
         <Text style={styles.sectionTitle}>About</Text>
-        <Text style={styles.description}>
-          Appstalker is a social networking platform where you can share the applications you have installed on your phone with your followers. Discover new apps through the people you follow and connect with others who share similar app interests.
+        <Text style={styles.body}>
+          Appstalker lets you broadcast the tools you rely on. Curate your visible apps, follow friends,
+          and steal their setup inspiration. Everything stays under your control.
         </Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Features</Text>
-        <View style={styles.featureItem}>
-          <Text style={styles.featureIcon}>✨</Text>
-          <Text style={styles.featureText}>Share your installed apps with followers</Text>
-        </View>
-        <View style={styles.featureItem}>
-          <Text style={styles.featureIcon}>🔔</Text>
-          <Text style={styles.featureText}>Real-time notifications for app installations</Text>
-        </View>
-        <View style={styles.featureItem}>
-          <Text style={styles.featureIcon}>👥</Text>
-          <Text style={styles.featureText}>Follow friends and discover their apps</Text>
-        </View>
-        <View style={styles.featureItem}>
-          <Text style={styles.featureIcon}>❤️</Text>
-          <Text style={styles.featureText}>Like profiles and build connections</Text>
-        </View>
-        <View style={styles.featureItem}>
-          <Text style={styles.featureIcon}>🔒</Text>
-          <Text style={styles.featureText}>Control which apps you share</Text>
-        </View>
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Highlights</Text>
+        <Text style={styles.bullet}>• Share curated app stacks with followers.</Text>
+        <Text style={styles.bullet}>• Discover trending apps from your network.</Text>
+        <Text style={styles.bullet}>• Real-time notifications for installs & follows.</Text>
+        <Text style={styles.bullet}>• Full privacy control per app.</Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Made With</Text>
-        <Text style={styles.tech}>React Native • Node.js • PostgreSQL</Text>
-        <Text style={styles.tech}>TypeScript • WebSocket • Drizzle ORM</Text>
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Stack</Text>
+        <Text style={styles.body}>React Native • Expo • Node.js • PostgreSQL • Drizzle ORM</Text>
       </View>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>© 2025 Appstalker</Text>
-        <Text style={styles.footerText}>All rights reserved</Text>
+        <Text style={styles.footerText}>Made with ☕ + ✨</Text>
       </View>
     </ScrollView>
   );
@@ -60,81 +44,71 @@ export default function AboutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F6F4FF',
+    paddingHorizontal: 20,
   },
-  header: {
+  hero: {
     alignItems: 'center',
     paddingVertical: 40,
-    backgroundColor: '#f9f9f9',
   },
   logo: {
-    fontSize: 64,
-    marginBottom: 12,
+    fontSize: 36,
+    color: '#5D4CE0',
   },
   appName: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 8,
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1F1644',
+    marginTop: 12,
   },
   version: {
-    fontSize: 16,
-    color: '#999',
-    marginBottom: 16,
-  },
-  tagline: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-  taglineSecondary: {
     fontSize: 14,
-    color: '#6C63FF',
-    fontWeight: '600',
+    color: '#8D8AAE',
     marginTop: 4,
   },
-  section: {
+  tagline: {
+    fontSize: 14,
+    color: '#5F5C7E',
+    marginTop: 12,
+  },
+  taglineSecondary: {
+    fontSize: 13,
+    color: '#5D4CE0',
+    marginTop: 4,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 12,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F1644',
+    marginBottom: 10,
   },
-  description: {
-    fontSize: 15,
-    color: '#666',
-    lineHeight: 22,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  featureIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  featureText: {
-    fontSize: 15,
-    color: '#666',
-    flex: 1,
-  },
-  tech: {
+  body: {
     fontSize: 14,
-    color: '#999',
-    marginBottom: 4,
+    color: '#5B597B',
+    lineHeight: 20,
+  },
+  bullet: {
+    fontSize: 14,
+    color: '#5B597B',
+    marginBottom: 6,
   },
   footer: {
-    padding: 40,
+    marginTop: 20,
     alignItems: 'center',
   },
   footerText: {
     fontSize: 13,
-    color: '#ccc',
-    marginBottom: 4,
+    color: '#8D8AAE',
   },
 });

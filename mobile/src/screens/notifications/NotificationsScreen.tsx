@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl, Image, ScrollView } from 'react-native';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config/api';
 
@@ -7,9 +7,12 @@ export default function NotificationsScreen({ navigation }: any) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [digest, setDigest] = useState<any | null>(null);
+  const [milestones, setMilestones] = useState<any[]>([]);
 
   useEffect(() => {
     loadNotifications();
+    loadHighlights();
   }, []);
 
   const loadNotifications = async () => {
@@ -24,9 +27,20 @@ export default function NotificationsScreen({ navigation }: any) {
     }
   };
 
+  const loadHighlights = async () => {
+    try {
+      const response = await api.get(API_ENDPOINTS.NOTIFICATIONS.HIGHLIGHTS);
+      setDigest(response.data.digest || null);
+      setMilestones(response.data.milestones || []);
+    } catch (error) {
+      console.error('Load highlights error:', error);
+    }
+  };
+
   const onRefresh = () => {
     setRefreshing(true);
     loadNotifications();
+    loadHighlights();
   };
 
   const markAsRead = async (notificationId: string) => {
@@ -82,16 +96,11 @@ export default function NotificationsScreen({ navigation }: any) {
   };
 
   const renderNotification = ({ item }: any) => {
-    const iconEmoji = getNotificationIcon(item.content);
     const accentColor = getNotificationColor(item.content);
-    
+
     return (
       <TouchableOpacity
-        style={[
-          styles.notificationCard,
-          !item.isRead && styles.unread,
-          !item.isRead && { borderLeftColor: accentColor }
-        ]}
+        style={styles.notificationCard}
         onPress={() => {
           markAsRead(item.id);
           if (item.relatedUser) {
@@ -99,25 +108,23 @@ export default function NotificationsScreen({ navigation }: any) {
           }
         }}
       >
-        <View style={[styles.iconBadge, { backgroundColor: accentColor + '20' }]}>
-          <Text style={styles.iconEmoji}>{iconEmoji}</Text>
+        <View style={[styles.notificationAvatar, { backgroundColor: accentColor + '26' }]}>
+          {item.relatedUser?.avatarUrl ? (
+            <Image source={{ uri: item.relatedUser.avatarUrl }} style={styles.notificationAvatarImg} />
+          ) : (
+            <Text style={[styles.notificationAvatarInitial, { color: accentColor }]}>
+              {(item.relatedUser?.displayName || '?')[0]?.toUpperCase()}
+            </Text>
+          )}
         </View>
-        
-        <View style={styles.notificationContent}>
-          <Text style={styles.notificationText}>
-            <Text style={styles.username}>
-              {item.relatedUser?.displayName || 'Someone'}
-            </Text>{' '}
+        <View style={styles.notificationBody}>
+          <Text style={styles.notificationMessage}>
+            <Text style={styles.notificationName}>{item.relatedUser?.displayName || 'Someone'}</Text>{' '}
             {item.content}
           </Text>
-          <Text style={styles.time}>
-            {formatRelativeTime(item.createdAt)}
-          </Text>
+          <Text style={styles.notificationTime}>{formatRelativeTime(item.createdAt)}</Text>
         </View>
-        
-        {!item.isRead && (
-          <View style={[styles.unreadDot, { backgroundColor: accentColor }]} />
-        )}
+        {!item.isRead && <View style={[styles.notificationIndicator, { backgroundColor: accentColor }]} />}
       </TouchableOpacity>
     );
   };
@@ -131,125 +138,273 @@ export default function NotificationsScreen({ navigation }: any) {
   }
 
   return (
-    <View style={styles.container}>
-      {notifications.length > 0 && (
-        <View style={styles.headerContainer}>
-          <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
-            <Text style={styles.markAllIcon}>✓</Text>
-            <Text style={styles.markAllText}>Mark All Read</Text>
+    <ScrollView style={styles.container}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backIcon}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.pageTitle}>Notifications</Text>
+        <TouchableOpacity onPress={markAllAsRead}>
+          <Text style={styles.readAllText}>Read All</Text>
+        </TouchableOpacity>
+      </View>
+
+      {digest && (
+        <View style={styles.digestCard}>
+          <Text style={styles.digestLabel}>THIS WEEK</Text>
+          <Text style={styles.digestTitle}>Your Weekly Digest</Text>
+          <Text style={styles.digestDescription}>{digest.summary}</Text>
+          <View style={styles.digestRow}>
+            {digest.stats?.avatars?.slice?.(0, 4)?.map((url: string, index: number) => (
+              <Image key={`${url}-${index}`} source={{ uri: url }} style={styles.digestAvatar} />
+            ))}
+            <Text style={styles.digestHint}>You gained {digest.stats?.newFollowers || 0} new followers.</Text>
+          </View>
+          <TouchableOpacity style={styles.digestButton}>
+            <Text style={styles.digestButtonText}>View Summary</Text>
           </TouchableOpacity>
         </View>
       )}
 
+      {milestones.length > 0 && (
+        <View style={styles.milestoneCard}>
+          <Text style={styles.milestoneLabel}>MILESTONE</Text>
+          <Text style={styles.milestoneTitle}>{milestones[0].title}</Text>
+          <Text style={styles.milestoneDescription}>
+            Congratulations! Your app collections are getting popular.
+          </Text>
+          <TouchableOpacity style={styles.milestoneButton}>
+            <Text style={styles.milestoneButtonText}>Share</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <View style={styles.sectionHeading}>
+        <Text style={styles.sectionHeadingText}>Today</Text>
+      </View>
+
       <FlatList
-        data={notifications}
+        data={notifications.filter((n: any) => {
+          const date = new Date(n.createdAt);
+          const now = new Date();
+          return now.toDateString() === date.toDateString();
+        })}
         renderItem={renderNotification}
         keyExtractor={(item: any) => item.id}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No notifications yet</Text>
-          </View>
-        }
+        scrollEnabled={false}
       />
-    </View>
+
+      <View style={styles.sectionHeading}>
+        <Text style={styles.sectionHeadingText}>Earlier</Text>
+      </View>
+
+      <FlatList
+        data={notifications.filter((n: any) => {
+          const date = new Date(n.createdAt);
+          const now = new Date();
+          return now.toDateString() !== date.toDateString();
+        })}
+        renderItem={renderNotification}
+        keyExtractor={(item: any) => `${item.id}-earlier`}
+        scrollEnabled={false}
+        ListEmptyComponent={
+          !notifications.length ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No notifications yet</Text>
+            </View>
+          ) : null
+        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F2FF',
+    backgroundColor: '#F9F8FF',
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerContainer: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  markAllButton: {
+  topBar: {
     flexDirection: 'row',
-    backgroundColor: '#6C63FF',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 18,
   },
-  markAllIcon: {
-    color: '#fff',
+  backButton: {
+    padding: 6,
+  },
+  backIcon: {
+    fontSize: 18,
+    color: '#5A2ED6',
+  },
+  pageTitle: {
     fontSize: 16,
-    marginRight: 6,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: '#1D1C39',
   },
-  markAllText: {
-    color: '#fff',
-    fontSize: 15,
+  readAllText: {
+    fontSize: 14,
     fontWeight: '600',
+    color: '#5A2ED6',
+  },
+  digestCard: {
+    marginHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 18,
+    shadowColor: '#5A2ED6',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  digestLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: '#9A97D7',
+  },
+  digestTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#170F49',
+    marginTop: 6,
+  },
+  digestDescription: {
+    fontSize: 14,
+    color: '#4B4A73',
+    marginTop: 6,
+  },
+  digestRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  digestAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+  },
+  digestHint: {
+    fontSize: 12,
+    color: '#4B4A73',
+    flex: 1,
+  },
+  digestButton: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    backgroundColor: '#5A2ED6',
+    borderRadius: 999,
+  },
+  digestButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  milestoneCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: '#EAE6FF',
+    borderRadius: 18,
+    padding: 18,
+  },
+  milestoneLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#7A6AD9',
+  },
+  milestoneTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F175C',
+    marginTop: 6,
+  },
+  milestoneDescription: {
+    fontSize: 13,
+    color: '#4C4681',
+    marginTop: 4,
+  },
+  milestoneButton: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    backgroundColor: '#5A2ED6',
+    borderRadius: 999,
+  },
+  milestoneButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  sectionHeading: {
+    marginTop: 22,
+    marginHorizontal: 16,
+  },
+  sectionHeadingText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#8A84C5',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   notificationCard: {
     flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
-    marginVertical: 6,
-    marginHorizontal: 16,
-    borderRadius: 14,
     alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 2,
   },
-  unread: {
-    backgroundColor: '#F0F2FF',
-    borderLeftWidth: 4,
-  },
-  iconBadge: {
+  notificationAvatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
-  iconEmoji: {
-    fontSize: 24,
+  notificationAvatarImg: {
+    width: 42,
+    height: 42,
+    borderRadius: 16,
   },
-  notificationContent: {
+  notificationAvatarInitial: {
+    fontWeight: '700',
+    fontSize: 18,
+  },
+  notificationBody: {
     flex: 1,
   },
-  notificationText: {
-    fontSize: 14,
-    color: '#1A1A1A',
+  notificationMessage: {
+    color: '#1F175C',
+    fontSize: 13,
   },
-  username: {
-    fontWeight: 'bold',
+  notificationName: {
+    fontWeight: '700',
   },
-  time: {
+  notificationTime: {
+    marginTop: 4,
     fontSize: 11,
-    color: '#bbb',
-    marginTop: 5,
-    fontWeight: '500',
+    color: '#8E8AA6',
   },
-  unreadDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginLeft: 8,
+  notificationIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginLeft: 10,
   },
   emptyContainer: {
     padding: 40,

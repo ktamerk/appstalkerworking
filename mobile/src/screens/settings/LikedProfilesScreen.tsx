@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config/api';
 
 export default function LikedProfilesScreen({ navigation }: any) {
-  const [likedProfiles, setLikedProfiles] = useState([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadLikedProfiles();
+    loadProfiles();
   }, []);
 
-  const loadLikedProfiles = async () => {
+  const loadProfiles = async () => {
     try {
       const response = await api.get(API_ENDPOINTS.PROFILE.LIKED);
-      setLikedProfiles(response.data.profiles);
+      setProfiles(response.data.profiles || []);
     } catch (error) {
       console.error('Load liked profiles error:', error);
     } finally {
@@ -22,130 +22,145 @@ export default function LikedProfilesScreen({ navigation }: any) {
     }
   };
 
-  const renderProfile = ({ item }: any) => (
-    <TouchableOpacity
-      style={styles.profileCard}
-      onPress={() => navigation.navigate('UserProfile', { username: item.username })}
-    >
-      {item.avatarUrl ? (
-        <Image source={{ uri: item.avatarUrl }} style={styles.avatarImage} />
-      ) : (
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{item.displayName[0].toUpperCase()}</Text>
-        </View>
-      )}
-      <View style={styles.profileInfo}>
-        <Text style={styles.displayName}>{item.displayName}</Text>
-        <Text style={styles.username}>@{item.username}</Text>
-        {item.bio && <Text style={styles.bio} numberOfLines={2}>{item.bio}</Text>}
-      </View>
-      <Text style={styles.likeIcon}>❤️</Text>
-    </TouchableOpacity>
-  );
-
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <Text>Loading...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator color="#5D4CE0" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={likedProfiles}
-        renderItem={renderProfile}
-        keyExtractor={(item: any) => item.id}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>💙</Text>
-            <Text style={styles.emptyText}>No liked profiles yet</Text>
-            <Text style={styles.emptySubtext}>Like profiles to see them here</Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+      <Text style={styles.title}>Liked Profiles</Text>
+      <Text style={styles.subtitle}>People you bookmarked for inspiration.</Text>
+
+      {profiles.length === 0 && (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyIcon}>♡</Text>
+          <Text style={styles.emptyText}>No liked profiles yet</Text>
+          <Text style={styles.emptySubtext}>Tap the heart on a profile to save it.</Text>
+        </View>
+      )}
+
+      {profiles.map((profile) => (
+        <TouchableOpacity
+          key={profile.id}
+          style={styles.card}
+          onPress={() => navigation.navigate('UserProfile', { username: profile.username })}
+        >
+          {profile.avatarUrl ? (
+            <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarInitial}>{profile.displayName?.[0]?.toUpperCase()}</Text>
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>{profile.displayName}</Text>
+            <Text style={styles.handle}>@{profile.username}</Text>
+            {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
           </View>
-        }
-      />
-    </View>
+          <Text style={styles.heart}>♥</Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F2FF',
+    backgroundColor: '#F6F4FF',
+    paddingHorizontal: 18,
   },
-  centerContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F6F4FF',
   },
-  profileCard: {
+  title: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#201745',
+    marginTop: 24,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#7E7AA5',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  card: {
     flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
-    marginVertical: 4,
-    marginHorizontal: 8,
-    borderRadius: 12,
     alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#6C63FF',
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    marginRight: 14,
+  },
+  avatarFallback: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    backgroundColor: '#E5E2FF',
+    marginRight: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  avatarImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 12,
+  avatarInitial: {
+    fontWeight: '700',
+    color: '#5349C7',
+    fontSize: 20,
   },
-  avatarText: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
+  name: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F1843',
   },
-  profileInfo: {
-    flex: 1,
-  },
-  displayName: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 2,
-  },
-  username: {
-    fontSize: 14,
-    color: '#666',
+  handle: {
+    fontSize: 13,
+    color: '#8A87AD',
     marginBottom: 4,
   },
   bio: {
     fontSize: 13,
-    color: '#999',
+    color: '#5F5E7F',
   },
-  likeIcon: {
+  heart: {
     fontSize: 24,
-    marginLeft: 8,
+    color: '#F45C84',
+    marginLeft: 12,
   },
-  emptyContainer: {
-    padding: 60,
+  emptyState: {
     alignItems: 'center',
+    paddingVertical: 80,
   },
   emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    fontSize: 48,
+    color: '#D9D6F3',
   },
   emptyText: {
     fontSize: 18,
+    color: '#1F1843',
     fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 8,
+    marginTop: 10,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
+    color: '#8C8AAE',
+    marginTop: 4,
   },
 });

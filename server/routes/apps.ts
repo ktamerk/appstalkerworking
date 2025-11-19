@@ -2,7 +2,7 @@ import express from 'express';
 import { db } from '../db';
 import { installedApps, follows, notifications, users, profiles, appsCatalog, appStatistics, appComments, appCommentLikes } from '../../shared/schema';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { eq, and, inArray, sql, desc } from 'drizzle-orm';
+import { eq, and, inArray, notInArray, sql, desc, ne, gte } from 'drizzle-orm';
 import { broadcastToUser } from '../websocket';
 
 const router = express.Router();
@@ -43,6 +43,56 @@ async function ensureCatalogEntry(packageName: string) {
     .returning();
 
   return inserted;
+}
+
+const TRENDING_THRESHOLD = 3;
+const TRENDING_WINDOW_HOURS = 24;
+
+async function getTrendingApps(limit = 50) {
+  const since = new Date(Date.now() - TRENDING_WINDOW_HOURS * 60 * 60 * 1000);
+  const rows = await db
+    .select({
+      packageName: installedApps.packageName,
+      appName: installedApps.appName,
+      appIcon: installedApps.appIcon,
+      platform: installedApps.platform,
+      installCount: sql<number>`count(*)::int`,
+    })
+    .from(installedApps)
+    .where(and(eq(installedApps.isVisible, true), gte(installedApps.installedAt, since)))
+    .groupBy(
+      installedApps.packageName,
+      installedApps.appName,
+      installedApps.appIcon,
+      installedApps.platform
+    )
+    .having(sql`count(*) >= ${TRENDING_THRESHOLD}`)
+    .orderBy(desc(sql`count(*)`))
+    .limit(limit);
+
+  return rows.map((row) => ({
+    ...row,
+    isTrending: row.installCount >= TRENDING_THRESHOLD,
+  }));
+}
+
+function mapTrendingToRecommendations(trending: Array<{
+  packageName: string;
+  appName: string;
+  appIcon: string | null;
+  platform: string;
+  installCount?: number;
+}>) {
+  return trending.map((app) => ({
+    packageName: app.packageName,
+    appName: app.appName,
+    appIcon: app.appIcon,
+    platform: app.platform,
+    sharedCount: app.installCount ?? 0,
+    matchScore: 0,
+    reason: 'Popular right now',
+    sharedUsers: [],
+  }));
 }
 
 router.post('/sync', authenticateToken, async (req: AuthRequest, res) => {
@@ -102,6 +152,144 @@ router.post('/sync', authenticateToken, async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Sync apps error:', error);
     res.status(500).json({ error: 'Failed to sync apps' });
+  }
+});
+
+router.get('/recommended', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const viewerId = req.userId!;
+
+    const viewerApps = await db
+      .select({ packageName: installedApps.packageName })
+      .from(installedApps)
+      .where(and(eq(installedApps.userId, viewerId), eq(installedApps.isVisible, true)));
+
+    if (viewerApps.length === 0) {
+      const fallback = await getTrendingApps(10);
+      return res.json({ apps: mapTrendingToRecommendations(fallback), fallbackUsed: true });
+    }
+
+    const viewerPackageNames = viewerApps.map((row) => row.packageName);
+
+    const overlapRows = await db
+      .select({
+        userId: installedApps.userId,
+        overlapCount: sql<number>`count(*)::int`,
+      })
+      .from(installedApps)
+      .where(and(
+        eq(installedApps.isVisible, true),
+        inArray(installedApps.packageName, viewerPackageNames),
+        ne(installedApps.userId, viewerId),
+      ))
+      .groupBy(installedApps.userId)
+      .orderBy(desc(sql`count(*)`))
+      .limit(100);
+
+    if (overlapRows.length === 0) {
+      const fallback = await getTrendingApps(10);
+      return res.json({ apps: mapTrendingToRecommendations(fallback), fallbackUsed: true });
+    }
+
+    const overlapMap = new Map(overlapRows.map((row) => [row.userId, row.overlapCount]));
+    const similarUserIds = overlapRows.map((row) => row.userId);
+
+    const recommendedRaw = await db
+      .select({
+        packageName: installedApps.packageName,
+        appName: installedApps.appName,
+        appIcon: installedApps.appIcon,
+        platform: installedApps.platform,
+        userId: installedApps.userId,
+      })
+      .from(installedApps)
+      .where(and(
+        eq(installedApps.isVisible, true),
+        inArray(installedApps.userId, similarUserIds),
+        notInArray(installedApps.packageName, viewerPackageNames),
+      ));
+
+    if (recommendedRaw.length === 0) {
+      const fallback = await getTrendingApps(10);
+      return res.json({ apps: mapTrendingToRecommendations(fallback), fallbackUsed: true });
+    }
+
+    const recommendationMap = new Map<string, {
+      packageName: string;
+      appName: string;
+      appIcon: string | null;
+      platform: string;
+      userIds: Set<string>;
+      score: number;
+    }>();
+
+    recommendedRaw.forEach((row) => {
+      const existing = recommendationMap.get(row.packageName) ?? {
+        packageName: row.packageName,
+        appName: row.appName,
+        appIcon: row.appIcon,
+        platform: row.platform,
+        userIds: new Set<string>(),
+        score: 0,
+      };
+      existing.userIds.add(row.userId);
+      existing.score += overlapMap.get(row.userId) ?? 1;
+      recommendationMap.set(row.packageName, existing);
+    });
+
+    const sorted = Array.from(recommendationMap.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 12);
+
+    const sampleUserIds = Array.from(new Set(sorted.flatMap((entry) => Array.from(entry.userIds).slice(0, 3))));
+    let sampleMap = new Map<string, any>();
+
+    if (sampleUserIds.length > 0) {
+      const sampleUsers = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          displayName: profiles.displayName,
+          avatarUrl: profiles.avatarUrl,
+        })
+        .from(users)
+        .innerJoin(profiles, eq(users.id, profiles.userId))
+        .where(inArray(users.id, sampleUserIds));
+
+      sampleMap = new Map(sampleUsers.map((user) => [user.id, user]));
+    }
+
+    const myAppCount = viewerPackageNames.length || 1;
+
+    const payload = sorted.map((entry) => {
+      const userList = Array.from(entry.userIds);
+      const bestOverlap = userList.reduce((max, id) => Math.max(max, overlapMap.get(id) ?? 0), 0);
+      const matchScore = Math.min(100, Math.round((bestOverlap / myAppCount) * 100));
+      const sharedUsers = userList
+        .slice(0, 3)
+        .map((id) => sampleMap.get(id))
+        .filter(Boolean);
+
+      const reason = sharedUsers[0]?.displayName
+        ? `${sharedUsers[0].displayName} also uses this`
+        : `${entry.userIds.size} similar people use this`;
+
+      return {
+        packageName: entry.packageName,
+        appName: entry.appName,
+        appIcon: entry.appIcon,
+        platform: entry.platform,
+        sharedCount: entry.userIds.size,
+        matchScore,
+        reason,
+        sharedUsers,
+      };
+    });
+
+    res.json({ apps: payload, fallbackUsed: false });
+  } catch (error) {
+    console.error('Get recommended apps error:', error);
+    res.status(500).json({ error: 'Failed to load recommendations' });
   }
 });
 
@@ -519,18 +707,33 @@ router.post('/visibility/bulk', authenticateToken, async (req: AuthRequest, res)
       
       for (const app of nowVisibleApps) {
         for (const follower of followers) {
+          const metadata = JSON.stringify({
+            appName: app.appName,
+            packageName: app.packageName,
+            platform: app.platform,
+          });
+
           const [notification] = await db.insert(notifications).values({
             userId: follower.followerId,
             type: 'new_app',
             content: `installed ${app.appName}`,
             relatedUserId: userId,
             relatedAppId: app.id,
+            metadata,
           }).returning();
 
           broadcastToUser(follower.followerId, {
             type: 'notification',
             data: notification,
           });
+        }
+
+        if (followers.length > 0) {
+          await db.update(installedApps)
+            .set({
+              discoverCount: sql`${installedApps.discoverCount} + ${followers.length}`,
+            })
+            .where(eq(installedApps.id, app.id));
         }
       }
     }
@@ -550,27 +753,7 @@ router.post('/visibility/bulk', authenticateToken, async (req: AuthRequest, res)
 router.get('/trending', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
-    
-    // Get top installed apps by count (only visible apps)
-    const trendingApps = await db
-      .select({
-        packageName: installedApps.packageName,
-        appName: installedApps.appName,
-        appIcon: installedApps.appIcon,
-        platform: installedApps.platform,
-        installCount: sql<number>`count(*)::int`,
-      })
-      .from(installedApps)
-      .where(eq(installedApps.isVisible, true))
-      .groupBy(
-        installedApps.packageName,
-        installedApps.appName,
-        installedApps.appIcon,
-        installedApps.platform
-      )
-      .orderBy(desc(sql`count(*)`))
-      .limit(limit);
-    
+    const trendingApps = await getTrendingApps(limit);
     res.json({ apps: trendingApps });
   } catch (error) {
     console.error('Get trending apps error:', error);

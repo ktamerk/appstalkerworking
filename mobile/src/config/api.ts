@@ -4,17 +4,21 @@ import { Platform } from 'react-native';
 declare const __DEV__: boolean;
 
 // Android Emulator için 10.0.2.2, iOS Simulator için localhost kullan
+const LAN_BASE_URL = 'http://192.168.222.123:5000';//10.0.0
+
 const getBaseUrl = () => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
   if (__DEV__) {
-    // Android emulator için
     if (Platform.OS === 'android') {
-      return 'http://10.0.2.2:5000';
+      return LAN_BASE_URL;
     }
-    // iOS simulator için
     return 'http://localhost:5000';
   }
-  // Production için (deploy edildiğinde)
-  return 'https://your-production-url.com';
+
+  return LAN_BASE_URL;
 };
 
 const getWsUrl = () => {
@@ -53,6 +57,7 @@ export const API_ENDPOINTS = {
     VISIBILITY: (appId: string) => `/api/apps/${appId}/visibility`,
     VISIBILITY_BULK: '/api/apps/visibility/bulk',
     TRENDING: '/api/apps/trending',
+    RECOMMENDED: '/api/apps/recommended',
     SEARCH_USERS: (packageName: string) => `/api/apps/search/${packageName}/users`,
     DETAIL: (packageName: string) => `/api/apps/catalog/${packageName}`,
     COMMENTS: (packageName: string) => `/api/apps/catalog/${packageName}/comments`,
@@ -65,6 +70,7 @@ export const API_ENDPOINTS = {
     FOLLOWERS: '/api/social/followers',
     FOLLOWING: '/api/social/following',
     DISCOVER: '/api/social/discover',
+    SIMILAR: '/api/social/similar',
     FRIEND_REQUEST: (userId: string) => `/api/social/friend-request/${userId}`,
     UPDATE_REQUEST: (requestId: string) => `/api/social/friend-request/${requestId}`,
     FRIEND_REQUESTS: '/api/social/friend-requests',
@@ -75,6 +81,7 @@ export const API_ENDPOINTS = {
     ALL: '/api/notifications',
     MARK_READ: (id: string) => `/api/notifications/${id}/read`,
     READ_ALL: '/api/notifications/read-all',
+    HIGHLIGHTS: '/api/notifications/highlights',
   },
   COLLECTIONS: {
     MY: '/api/collections/my',

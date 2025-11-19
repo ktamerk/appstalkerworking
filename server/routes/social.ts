@@ -2,7 +2,7 @@ import express from 'express';
 import { db } from '../db';
 import { follows, friendRequests, likes, notifications, users, profiles, installedApps } from '../../shared/schema';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { eq, and, or, sql, desc } from 'drizzle-orm';
+import { eq, and, or, sql, desc, inArray, ne } from 'drizzle-orm';
 import { broadcastToUser } from '../websocket';
 
 const router = express.Router();
@@ -378,6 +378,97 @@ router.get('/discover', authenticateToken, async (_req: AuthRequest, res) => {
   } catch (error) {
     console.error('Discover people error:', error);
     res.status(500).json({ error: 'Failed to load discover list' });
+  }
+});
+
+router.get('/similar', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const viewerId = req.userId!;
+
+    const viewerApps = await db
+      .select({ packageName: installedApps.packageName })
+      .from(installedApps)
+      .where(and(eq(installedApps.userId, viewerId), eq(installedApps.isVisible, true)));
+
+    if (viewerApps.length === 0) {
+      return res.json({ users: [] });
+    }
+
+    const viewerPackageNames = viewerApps.map((row) => row.packageName);
+
+    const overlapRows = await db
+      .select({
+        userId: installedApps.userId,
+        overlapCount: sql<number>`count(*)::int`,
+      })
+      .from(installedApps)
+      .where(and(
+        eq(installedApps.isVisible, true),
+        inArray(installedApps.packageName, viewerPackageNames),
+        ne(installedApps.userId, viewerId),
+      ))
+      .groupBy(installedApps.userId)
+      .orderBy(desc(sql`count(*)`))
+      .limit(20);
+
+    if (overlapRows.length === 0) {
+      return res.json({ users: [] });
+    }
+
+    const userIds = overlapRows.map((row) => row.userId);
+
+    const userRecords = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        displayName: profiles.displayName,
+        avatarUrl: profiles.avatarUrl,
+      })
+      .from(users)
+      .innerJoin(profiles, eq(users.id, profiles.userId))
+      .where(inArray(users.id, userIds));
+
+    const userMap = new Map(userRecords.map((user) => [user.id, user]));
+
+    const sharedAppRows = await db
+      .select({
+        userId: installedApps.userId,
+        appName: installedApps.appName,
+      })
+      .from(installedApps)
+      .where(and(
+        eq(installedApps.isVisible, true),
+        inArray(installedApps.userId, userIds),
+        inArray(installedApps.packageName, viewerPackageNames),
+      ));
+
+    const sharedMap = new Map<string, string[]>();
+    sharedAppRows.forEach((row) => {
+      const list = sharedMap.get(row.userId) ?? [];
+      if (list.length < 3) {
+        list.push(row.appName);
+      }
+      sharedMap.set(row.userId, list);
+    });
+
+    const payload = overlapRows
+      .map((row) => {
+        const info = userMap.get(row.userId);
+        if (!info) return null;
+        const matchScore = Math.min(100, Math.round((row.overlapCount / viewerPackageNames.length) * 100));
+        return {
+          user: info,
+          overlapCount: row.overlapCount,
+          matchScore,
+          sharedApps: sharedMap.get(row.userId) ?? [],
+        };
+      })
+      .filter(Boolean);
+
+    res.json({ users: payload });
+  } catch (error) {
+    console.error('Get similar users error:', error);
+    res.status(500).json({ error: 'Failed to load similar users' });
   }
 });
 

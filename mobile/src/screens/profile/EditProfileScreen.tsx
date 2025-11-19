@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch, Alert, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch, Alert, Image, ScrollView } from 'react-native';
+import { launchCamera, launchImageLibrary, Asset, ImagePickerResponse } from 'react-native-image-picker';
+import RNFS from 'react-native-fs';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config/api';
 
@@ -34,44 +36,77 @@ export default function EditProfileScreen({ navigation }: any) {
     }
   };
 
+  const buildDataUri = async (asset: Asset): Promise<string | null> => {
+    if (asset.base64) {
+      const mime = asset.type || 'image/jpeg';
+      return `data:${mime};base64,${asset.base64}`;
+    }
+
+    if (asset.uri) {
+      try {
+        const path = asset.uri.startsWith('file://') ? asset.uri.replace('file://', '') : asset.uri;
+        const base64Data = await RNFS.readFile(path, 'base64');
+        const mime = asset.type || 'image/jpeg';
+        return `data:${mime};base64,${base64Data}`;
+      } catch (error) {
+        console.error('Avatar encode error:', error);
+      }
+    }
+
+    return null;
+  };
+
+  const createImagePickerHandler = async (mode: 'camera' | 'library') => {
+    const picker = mode === 'camera' ? launchCamera : launchImageLibrary;
+    const response: ImagePickerResponse = await picker({
+      mediaType: 'photo',
+      includeBase64: true,
+      quality: 0.7,
+      maxHeight: 1024,
+      maxWidth: 1024,
+    });
+
+    if (response.didCancel) return;
+    if (response.errorCode) {
+      Alert.alert('Photo error', response.errorMessage || 'Unable to access selected image.');
+      return;
+    }
+
+    const asset: Asset | undefined = response.assets?.[0];
+    if (!asset) return;
+
+    const dataUri = await buildDataUri(asset);
+    if (!dataUri) {
+      Alert.alert('Photo error', 'Unable to process the selected photo.');
+      return;
+    }
+
+    setAvatarUrl(dataUri);
+  };
+
   const selectPhoto = () => {
-    // MVP: URL input for cross-platform compatibility
-    // Production TODO: Implement expo-image-picker for real photo selection
-    // Install: expo install expo-image-picker
-    // Then use: ImagePicker.launchImageLibraryAsync() and upload to backend
-    Alert.alert(
-      'Change Profile Photo',
-      'For this MVP, enter a photo URL. In production, this will use your camera/gallery.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Use Generated Avatar',
-          onPress: () => {
-            // Generate a pastel avatar based on display name
-            const generatedUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=a8b5ff&color=fff&size=200`;
-            setAvatarUrl(generatedUrl);
-          },
-        },
-        {
-          text: 'Enter Custom URL',
-          onPress: () => {
-            // For custom image URLs
-            const customUrl = prompt('Enter image URL (https://...)') || '';
-            if (customUrl && customUrl.startsWith('http')) {
-              setAvatarUrl(customUrl);
-            }
-          },
-        },
-      ]
-    );
+    Alert.alert('Change photo', 'Choose a source', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Camera', onPress: () => createImagePickerHandler('camera') },
+      { text: 'Gallery', onPress: () => createImagePickerHandler('library') },
+    ]);
   };
 
   const handleUpdate = async () => {
     setLoading(true);
     try {
+      if (newLinkUrl.trim()) {
+        const response = await api.post(API_ENDPOINTS.PROFILE.LINKS, {
+          platform: newLinkPlatform || 'link',
+          label: newLinkLabel || newLinkPlatform || 'Link',
+          url: newLinkUrl.trim(),
+        });
+        setLinks((prev) => [...prev, response.data.link]);
+        setNewLinkLabel('');
+        setNewLinkPlatform('');
+        setNewLinkUrl('');
+      }
+
       await api.put(API_ENDPOINTS.PROFILE.UPDATE, {
         displayName,
         bio,
@@ -80,33 +115,11 @@ export default function EditProfileScreen({ navigation }: any) {
         isPrivate,
       });
 
-      Alert.alert('Success', 'Profile updated successfully', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      Alert.alert('Success', 'Profile updated successfully', [{ text: 'OK', onPress: () => navigation.goBack() }]);
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.error || 'Failed to update profile');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAddLink = async () => {
-    if (!newLinkUrl.trim()) {
-      Alert.alert('Error', 'Please enter a URL');
-      return;
-    }
-    try {
-      const response = await api.post(API_ENDPOINTS.PROFILE.LINKS, {
-        platform: newLinkPlatform || 'url',
-        label: newLinkLabel || newLinkPlatform || 'Link',
-        url: newLinkUrl.trim(),
-      });
-      setLinks((prev) => [...prev, response.data.link]);
-      setNewLinkLabel('');
-      setNewLinkPlatform('');
-      setNewLinkUrl('');
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.error || 'Failed to add link');
     }
   };
 
@@ -120,228 +133,253 @@ export default function EditProfileScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       <TouchableOpacity style={styles.avatarContainer} onPress={selectPhoto}>
         {avatarUrl ? (
           <Image source={{ uri: avatarUrl }} style={styles.avatar} />
         ) : (
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>{displayName[0]?.toUpperCase() || '?'}</Text>
+            <Text style={styles.avatarText}>{displayName?.[0]?.toUpperCase() || 'A'}</Text>
           </View>
         )}
-        <Text style={styles.changePhotoText}>Change Photo</Text>
       </TouchableOpacity>
+      <Text style={styles.changePhotoText}>Change photo</Text>
 
-      <Text style={styles.label}>Display Name</Text>
-      <TextInput
-        style={styles.input}
-        value={displayName}
-        onChangeText={setDisplayName}
-        placeholder="Your display name"
-      />
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Display Name</Text>
+        <View style={styles.inputField}>
+          <TextInput
+            style={styles.input}
+            placeholder="Jordan Lee"
+            placeholderTextColor="#9FA0C7"
+            value={displayName}
+            onChangeText={setDisplayName}
+          />
+        </View>
+      </View>
 
-      <Text style={styles.label}>Bio</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        value={bio}
-        onChangeText={setBio}
-        placeholder="Tell us about yourself"
-        multiline
-        numberOfLines={4}
-      />
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Bio</Text>
+        <View style={[styles.inputField, styles.textArea]}>
+          <TextInput
+            style={styles.input}
+            placeholder="Tell people how you discover apps..."
+            placeholderTextColor="#9FA0C7"
+            value={bio}
+            onChangeText={setBio}
+            multiline
+          />
+        </View>
+      </View>
 
-      <View style={styles.switchRow}>
-        <View style={styles.switchLabel}>
-          <Text style={styles.label}>Show Apps</Text>
-          <Text style={styles.hint}>Let others see your installed apps</Text>
+      <View style={styles.toggleRow}>
+        <View>
+          <Text style={styles.toggleTitle}>Show apps on profile</Text>
+          <Text style={styles.toggleSubtitle}>When off, nobody sees your collection.</Text>
         </View>
         <Switch value={showApps} onValueChange={setShowApps} />
       </View>
 
-      <View style={styles.switchRow}>
-        <View style={styles.switchLabel}>
-          <Text style={styles.label}>Private Profile</Text>
-          <Text style={styles.hint}>Only approved followers can see your profile</Text>
+      <View style={styles.toggleRow}>
+        <View>
+          <Text style={styles.toggleTitle}>Private profile</Text>
+          <Text style={styles.toggleSubtitle}>Approve new followers manually.</Text>
         </View>
         <Switch value={isPrivate} onValueChange={setIsPrivate} />
       </View>
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleUpdate}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>{loading ? 'Saving...' : 'Save'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.sectionLabel}>Bio Links</Text>
-      {links.map((link) => (
-        <View key={link.id} style={styles.linkRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.linkLabel}>{link.label || link.platform}</Text>
-            <Text style={styles.linkUrl}>{link.url}</Text>
+      <View style={styles.linksSection}>
+        {links.map((link) => (
+          <View key={link.id} style={styles.linkRow}>
+            <View>
+              <Text style={styles.linkLabel}>{link.label || link.platform}</Text>
+              <Text style={styles.linkUrl}>{link.url}</Text>
+            </View>
+            <TouchableOpacity onPress={() => handleRemoveLink(link.id)}>
+              <Text style={styles.linkRemove}>Remove</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={() => handleRemoveLink(link.id)}>
-            <Text style={styles.deleteLink}>Remove</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
+        ))}
 
-      <View style={styles.linkInputs}>
-        <TextInput
-          style={styles.input}
-          placeholder="Platform (e.g., Instagram)"
-          value={newLinkPlatform}
-          onChangeText={setNewLinkPlatform}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Label"
-          value={newLinkLabel}
-          onChangeText={setNewLinkLabel}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="https://your-link.com"
-          value={newLinkUrl}
-          onChangeText={setNewLinkUrl}
-          autoCapitalize="none"
-        />
-        <TouchableOpacity style={styles.addLinkButton} onPress={handleAddLink}>
-          <Text style={styles.addLinkButtonText}>Add Link</Text>
-        </TouchableOpacity>
+        <View style={styles.newLinkRow}>
+          <TextInput
+            style={styles.newLinkInput}
+            placeholder="Platform"
+            placeholderTextColor="#B1B0C8"
+            value={newLinkPlatform}
+            onChangeText={setNewLinkPlatform}
+          />
+          <TextInput
+            style={styles.newLinkInput}
+            placeholder="Label"
+            placeholderTextColor="#B1B0C8"
+            value={newLinkLabel}
+            onChangeText={setNewLinkLabel}
+          />
+          <TextInput
+            style={styles.newLinkInputFull}
+            placeholder="https://"
+            placeholderTextColor="#B1B0C8"
+            value={newLinkUrl}
+            onChangeText={setNewLinkUrl}
+          />
+        </View>
       </View>
-    </View>
+
+      <TouchableOpacity style={[styles.saveButton, loading && styles.saveButtonDisabled]} onPress={handleUpdate} disabled={loading}>
+        <Text style={styles.saveButtonText}>{loading ? 'Saving...' : 'Save Changes'}</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#F6F4FF',
+    paddingHorizontal: 20,
   },
   avatarContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
+    alignSelf: 'center',
+    marginTop: 24,
+    borderRadius: 60,
+    padding: 5,
+    backgroundColor: '#E6E3FF',
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
   },
   avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#6C63FF',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: '#5D4CE0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
     color: '#fff',
-    fontSize: 40,
-    fontWeight: 'bold',
+    fontSize: 36,
+    fontWeight: '700',
   },
   changePhotoText: {
-    color: '#6C63FF',
-    fontSize: 16,
-    marginTop: 10,
+    textAlign: 'center',
+    color: '#5D4CE0',
+    marginTop: 8,
+    marginBottom: 20,
     fontWeight: '600',
+  },
+  inputGroup: {
+    marginBottom: 18,
   },
   label: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: '#7B78A8',
     marginBottom: 8,
-    marginTop: 15,
   },
-  hint: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+  inputField: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   textArea: {
-    height: 100,
-    textAlignVertical: 'top',
+    minHeight: 100,
   },
-  switchRow: {
+  input: {
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#1F1843',
+  },
+  toggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  switchLabel: {
-    flex: 1,
-  },
-  buttonContainer: {
-    alignItems: 'center',
-    marginTop: 30,
-  },
-  button: {
-    backgroundColor: '#6C63FF',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    backgroundColor: '#999',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  sectionLabel: {
-    fontSize: 16,
+  toggleTitle: {
+    fontSize: 15,
     fontWeight: '600',
-    marginTop: 24,
-    marginBottom: 8,
+    color: '#1F1843',
+  },
+  toggleSubtitle: {
+    fontSize: 12,
+    color: '#8A88AD',
+  },
+  linksSection: {
+    marginTop: 16,
   },
   linkRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    gap: 12,
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   linkLabel: {
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: '#1F1843',
   },
   linkUrl: {
-    color: '#666',
-    fontSize: 13,
+    color: '#8A88AD',
+    fontSize: 12,
   },
-  deleteLink: {
-    color: '#FF5C8D',
+  linkRemove: {
+    color: '#F45C84',
     fontWeight: '600',
   },
-  linkInputs: {
-    marginTop: 12,
+  newLinkRow: {
+    marginTop: 8,
     gap: 10,
   },
-  addLinkButton: {
-    backgroundColor: '#6C63FF',
-    borderRadius: 8,
+  newLinkInput: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 12,
     paddingVertical: 10,
+    color: '#1F1843',
+  },
+  newLinkInputFull: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#1F1843',
+  },
+  saveButton: {
+    marginTop: 24,
+    backgroundColor: '#5D4CE0',
+    borderRadius: 18,
+    paddingVertical: 14,
     alignItems: 'center',
   },
-  addLinkButtonText: {
+  saveButtonDisabled: {
+    backgroundColor: '#A19CD1',
+  },
+  saveButtonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

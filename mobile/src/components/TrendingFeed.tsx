@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import api from '../services/api';
@@ -11,9 +11,15 @@ interface TrendingApp {
   appIcon?: string;
   platform: string;
   installCount: number;
+  isTrending?: boolean;
 }
 
-export default function TrendingFeed() {
+interface TrendingFeedProps {
+  ListHeaderComponent?: React.ReactElement | null;
+  searchQuery?: string;
+}
+
+export default function TrendingFeed({ ListHeaderComponent, searchQuery }: TrendingFeedProps) {
   const [trendingApps, setTrendingApps] = useState<TrendingApp[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -24,6 +30,7 @@ export default function TrendingFeed() {
   }, []);
 
   const loadTrendingApps = async () => {
+    // fetch aggregated install counts so the list remains lightweight
     try {
       const response = await api.get(API_ENDPOINTS.APPS.TRENDING);
       setTrendingApps(response.data.apps || []);
@@ -40,11 +47,22 @@ export default function TrendingFeed() {
     loadTrendingApps();
   };
 
+  const filteredApps = useMemo(() => {
+    if (!searchQuery?.trim()) {
+      return trendingApps;
+    }
+    const query = searchQuery.toLowerCase();
+    return trendingApps.filter(
+      (app) =>
+        app.appName.toLowerCase().includes(query) || app.packageName.toLowerCase().includes(query)
+    );
+  }, [trendingApps, searchQuery]);
+
   const renderApp = ({ item }: { item: TrendingApp }) => {
     const iconSource = getImageSource(item.appIcon);
     return (
       <TouchableOpacity
-        style={styles.appCard}
+        style={styles.card}
         onPress={() =>
           navigation.navigate('AppDetail', {
             packageName: item.packageName,
@@ -52,20 +70,25 @@ export default function TrendingFeed() {
           })
         }
       >
-        <View style={styles.appHeader}>
+        <View style={styles.cardRow}>
           {iconSource ? (
             <Image source={{ uri: iconSource }} style={styles.appIcon} />
           ) : (
-            <View style={styles.appIconPlaceholder}>
-              <Text style={styles.appIconText}>{item.appName[0]}</Text>
+            <View style={styles.appIconFallback}>
+              <Text style={styles.appIconInitial}>{item.appName[0]}</Text>
             </View>
           )}
-          <View style={styles.appInfo}>
+          <View style={{ flex: 1 }}>
             <Text style={styles.appName}>{item.appName}</Text>
-            <Text style={styles.installCount}>
-              {item.installCount} {item.installCount === 1 ? 'user' : 'users'}
+            <Text style={styles.appDetails}>
+              {item.installCount} {item.installCount === 1 ? 'discoverer' : 'discoverers'}
             </Text>
           </View>
+          {item.isTrending && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>Trending</Text>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -73,7 +96,7 @@ export default function TrendingFeed() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={styles.emptyContainer}>
         <Text>Loading trending apps...</Text>
       </View>
     );
@@ -81,20 +104,21 @@ export default function TrendingFeed() {
 
   return (
     <FlatList
-      data={trendingApps}
+      data={filteredApps}
       renderItem={renderApp}
       keyExtractor={(item) => item.packageName}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-      contentContainerStyle={styles.listContainer}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      contentContainerStyle={styles.listContent}
+      ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>📊</Text>
-          <Text style={styles.emptyText}>No trending apps yet</Text>
-          <Text style={styles.emptySubtext}>
-            Apps will appear here as more people share them
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyIcon}>?o?</Text>
+          <Text style={styles.emptyText}>
+            {searchQuery?.trim() ? 'No apps match your search.' : 'No trending apps yet'}
           </Text>
+          {!searchQuery?.trim() && (
+            <Text style={styles.emptySubtitle}>Share your stack to boost an app here.</Text>
+          )}
         </View>
       }
     />
@@ -102,84 +126,89 @@ export default function TrendingFeed() {
 }
 
 const styles = StyleSheet.create({
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F0F2FF',
+  listContent: {
+    paddingBottom: 20,
   },
-  listContainer: {
-    paddingVertical: 8,
-  },
-  appCard: {
+  card: {
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginVertical: 6,
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    marginHorizontal: 4,
+    marginVertical: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  appHeader: {
+  cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 14,
   },
   appIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    marginRight: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 18,
   },
-  appIconPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#6C63FF',
+  appIconFallback: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: '#E4E2FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
   },
-  appIconText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  appInfo: {
-    flex: 1,
+  appIconInitial: {
+    fontWeight: '700',
+    color: '#5C4FD6',
   },
   appName: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 4,
+    fontWeight: '600',
+    color: '#1F1747',
   },
-  installCount: {
-    fontSize: 14,
-    color: '#666',
+  appDetails: {
+    fontSize: 13,
+    color: '#8C89B2',
+    marginTop: 2,
+  },
+  badge: {
+    backgroundColor: '#F2EFFF',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  badgeText: {
+    color: '#5C4FD6',
+    fontWeight: '600',
+    fontSize: 12,
   },
   emptyContainer: {
-    paddingTop: 100,
+    flex: 1,
+    height: 200,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
   },
   emptyIcon: {
-    fontSize: 56,
-    marginBottom: 16,
+    fontSize: 40,
+    color: '#D7D4F6',
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-    marginBottom: 8,
-    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F1747',
+    marginTop: 12,
   },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 20,
+  emptySubtitle: {
+    fontSize: 13,
+    color: '#8C89B2',
+    marginTop: 4,
   },
 });
+
+
