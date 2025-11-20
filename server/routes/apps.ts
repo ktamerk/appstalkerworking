@@ -358,6 +358,8 @@ router.get('/catalog/:packageName', authenticateToken, async (req: AuthRequest, 
     const usersWithApp = usersWithAppRaw
       .filter((item) => allowedIds.has(item.userId))
       .slice(0, 20);
+    const friendsCount = usersWithAppRaw.filter((item) => allowedIds.has(item.userId)).length;
+    const isTrending = visibleInstallCount >= TRENDING_THRESHOLD;
 
     const comments = await db
       .select({
@@ -403,6 +405,8 @@ router.get('/catalog/:packageName', authenticateToken, async (req: AuthRequest, 
       stats: {
         visibleInstallCount,
         totalInstallCount,
+        isTrending,
+        friendsCount,
       },
       users: usersWithApp,
       comments,

@@ -48,6 +48,7 @@ export default function AppDetailScreen({ route }: any) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [likeBusy, setLikeBusy] = useState<Record<string, boolean>>({});
+  const friendsCount = stats?.friendsCount ?? users.length;
 
   const loadData = useCallback(async () => {
     try {
@@ -171,6 +172,12 @@ export default function AppDetailScreen({ route }: any) {
             <Ionicons name="cloud-download-outline" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
+        <View style={styles.badgeRow}>
+          {stats?.isTrending && <Text style={[styles.badge, styles.badgeTrending]}>Trending</Text>}
+          {appData?.category && <Text style={styles.badge}>{appData.category}</Text>}
+          <Text style={styles.badge}>{(stats?.totalInstallCount ?? 0)} total</Text>
+          <Text style={styles.badge}>{(stats?.visibleInstallCount ?? 0)} visible</Text>
+        </View>
         <View style={styles.statsRow}>
           <View style={styles.statPill}>
             <Text style={styles.statLabel}>Visible Installs</Text>
@@ -189,7 +196,7 @@ export default function AppDetailScreen({ route }: any) {
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Who uses it</Text>
-          <Text style={styles.sectionBadge}>{users.length} friends</Text>
+          <Text style={styles.sectionBadge}>{friendsCount} friends</Text>
         </View>
         {users.length ? users.map(renderUser) : <Text style={styles.emptyText}>No friends found</Text>}
       </View>
@@ -305,6 +312,24 @@ const styles = StyleSheet.create({
   appCategory: {
     fontSize: 13,
     color: '#7A79A4',
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
+  },
+  badge: {
+    backgroundColor: '#E9E7FF',
+    color: '#5146D8',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    fontSize: 12,
+  },
+  badgeTrending: {
+    backgroundColor: '#FFE9D9',
+    color: '#D45400',
   },
   installButton: {
     width: 46,
