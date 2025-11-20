@@ -22,6 +22,7 @@ import AboutScreen from './src/screens/settings/AboutScreen';
 import AppDetailScreen from './src/screens/apps/AppDetailScreen';
 import { initWebSocket, disconnectWebSocket } from './src/services/websocket';
 import SplashScreen from './src/components/SplashScreen';
+import CollectionDetailScreen from './src/screens/profile/CollectionDetailScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -176,6 +177,7 @@ export default function App() {
             <Stack.Screen name="LikedProfiles" component={LikedProfilesScreen} options={{ title: '' }} />
             <Stack.Screen name="Help" component={HelpScreen} options={{ title: '' }} />
             <Stack.Screen name="About" component={AboutScreen} options={{ title: '' }} />
+            <Stack.Screen name="CollectionDetail" component={CollectionDetailScreen} options={{ title: '' }} />
           </>
         )}
       </Stack.Navigator>

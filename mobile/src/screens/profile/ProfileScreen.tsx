@@ -32,6 +32,7 @@ export default function ProfileScreen({ route, navigation }: any) {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [apps, setApps] = useState<any[]>([]);
   const [similarUsers, setSimilarUsers] = useState<any[]>([]);
+  const [collections, setCollections] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -49,6 +50,15 @@ export default function ProfileScreen({ route, navigation }: any) {
       setUserInfo(response.data.user);
       setApps(response.data.apps || []);
       setIsFollowing(Boolean(response.data.profile?.isFollowing));
+      try {
+        const colRes = usernameParam
+          ? await api.get(API_ENDPOINTS.COLLECTIONS.USER(usernameParam))
+          : await api.get(API_ENDPOINTS.COLLECTIONS.MY);
+        setCollections(colRes.data.collections || []);
+      } catch (err) {
+        console.warn('Collections load error', err);
+        setCollections([]);
+      }
 
       if (!usernameParam) {
         const similarResponse = await api.get(API_ENDPOINTS.SOCIAL.SIMILAR);
@@ -203,6 +213,33 @@ export default function ProfileScreen({ route, navigation }: any) {
           </View>
         </View>
       </View>
+
+      {collections.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Stacks</Text>
+            <Text style={styles.sectionSubtitle}>{collections.length} collections</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.collectionRow}>
+            {collections.map((col) => (
+              <TouchableOpacity
+                key={col.id}
+                style={styles.collectionCard}
+                onPress={() => navigation.navigate('CollectionDetail', { id: col.id, title: col.title })}
+              >
+                <Text style={styles.collectionTitle} numberOfLines={1}>{col.title}</Text>
+                {col.description ? <Text style={styles.collectionDescription} numberOfLines={2}>{col.description}</Text> : null}
+                <View style={styles.collectionMeta}>
+                  <Text style={styles.collectionBadge}>{col.appCount ?? col.apps?.length ?? 0} apps</Text>
+                  <Text style={[styles.collectionBadge, !col.isPublic && styles.collectionBadgePrivate]}>
+                    {col.isPublic ? 'Public' : 'Private'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       <View style={styles.appGrid}>
         {filteredApps.length ? (
@@ -528,6 +565,51 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#7B7FA2',
     marginTop: 4,
+  },
+  collectionRow: {
+    gap: 12,
+    paddingRight: 12,
+  },
+  collectionCard: {
+    width: 200,
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+    marginRight: 12,
+  },
+  collectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1940',
+  },
+  collectionDescription: {
+    marginTop: 6,
+    color: '#6E6D92',
+    fontSize: 13,
+  },
+  collectionMeta: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  collectionBadge: {
+    backgroundColor: '#EEF0FF',
+    color: '#4A3FE6',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    fontSize: 12,
+    overflow: 'hidden',
+  },
+  collectionBadgePrivate: {
+    backgroundColor: '#F5F2FF',
+    color: '#7C6BD8',
   },
   similarCard: {
     flexDirection: 'row',
