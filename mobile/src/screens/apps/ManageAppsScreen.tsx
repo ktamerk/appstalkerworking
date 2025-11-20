@@ -24,9 +24,47 @@ interface App {
   appIcon?: string;
   isVisible: boolean;
   platform: string;
+  installedAt?: string;
 }
 
 type TabKey = 'visible' | 'hidden';
+
+const SYSTEM_PREFIXES = [
+  'com.android.',
+  'android.',
+  'com.samsung.',
+  'com.huawei.',
+  'com.miui.',
+  'com.coloros.',
+  'com.vivo.',
+  'com.oppo.',
+  'com.google.android.',
+];
+
+const ALLOWED_GOOGLE_PACKAGES = new Set([
+  'com.google.android.youtube',
+  'com.google.android.youtube.tv',
+  'com.google.android.apps.youtube.music',
+  'com.android.chrome',
+  'com.google.android.gm',
+  'com.google.android.apps.maps',
+  'com.google.android.apps.photos',
+  'com.google.android.apps.docs',
+]);
+
+const isSystemApp = (app: App) => {
+  const pkg = app.packageName;
+  if (ALLOWED_GOOGLE_PACKAGES.has(pkg)) return false;
+  return SYSTEM_PREFIXES.some((prefix) => pkg.startsWith(prefix));
+};
+
+const isRecentlyAdded = (app: App, days = 7) => {
+  if (!app.installedAt) return false;
+  const installedDate = new Date(app.installedAt);
+  if (Number.isNaN(installedDate.getTime())) return false;
+  const threshold = Date.now() - days * 24 * 60 * 60 * 1000;
+  return installedDate.getTime() >= threshold;
+};
 
 export default function ManageAppsScreen({ navigation }: any) {
   const [apps, setApps] = useState<App[]>([]);
@@ -37,6 +75,7 @@ export default function ManageAppsScreen({ navigation }: any) {
   const [syncing, setSyncing] = useState(false);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('visible');
+  const [hideSystemApps, setHideSystemApps] = useState(true);
 
   useEffect(() => {
     loadApps();
@@ -44,7 +83,7 @@ export default function ManageAppsScreen({ navigation }: any) {
 
   useEffect(() => {
     filterApps();
-  }, [searchQuery, apps, activeTab]);
+  }, [searchQuery, apps, activeTab, hideSystemApps]);
 
   const loadApps = async () => {
     try {
@@ -91,7 +130,13 @@ export default function ManageAppsScreen({ navigation }: any) {
   };
 
   const filterApps = () => {
-    let list = activeTab === 'visible' ? apps.filter((a) => a.isVisible) : apps.filter((a) => !a.isVisible);
+    let list =
+      activeTab === 'visible' ? apps.filter((a) => a.isVisible) : apps.filter((a) => !a.isVisible);
+
+    if (hideSystemApps) {
+      list = list.filter((app) => !isSystemApp(app));
+    }
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       list = list.filter(
@@ -198,6 +243,16 @@ export default function ManageAppsScreen({ navigation }: any) {
         placeholderTextColor="#9FA0C7"
       />
 
+      <View style={styles.filterRow}>
+        <Text style={styles.filterLabel}>Hide system apps</Text>
+        <Switch
+          value={hideSystemApps}
+          onValueChange={setHideSystemApps}
+          trackColor={{ false: '#E1E1F2', true: '#B7B0FF' }}
+          thumbColor={hideSystemApps ? '#4A3FE6' : '#F7F7FF'}
+        />
+      </View>
+
       <TouchableOpacity style={styles.scanButton} onPress={handleDeviceScan} disabled={syncing}>
         {syncing ? (
           <ActivityIndicator color="#fff" />
@@ -260,6 +315,12 @@ export default function ManageAppsScreen({ navigation }: any) {
                 <View>
                   <Text style={styles.appName}>{item.appName}</Text>
                   <Text style={styles.appMeta}>{item.packageName}</Text>
+                  <View style={styles.tagRow}>
+                    {isRecentlyAdded(item) && <Text style={styles.badge}>New</Text>}
+                    {!hideSystemApps && isSystemApp(item) && (
+                      <Text style={[styles.badge, styles.badgeMuted]}>System</Text>
+                    )}
+                  </View>
                 </View>
               </View>
               <Switch
@@ -335,6 +396,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 15,
     color: '#1F1A40',
+  },
+  filterRow: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  filterLabel: {
+    fontSize: 14,
+    color: '#403D66',
+    fontWeight: '600',
   },
   scanButton: {
     marginTop: 16,
@@ -470,6 +542,24 @@ const styles = StyleSheet.create({
   appMeta: {
     fontSize: 12,
     color: '#7A799A',
+  },
+  tagRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
+  },
+  badge: {
+    backgroundColor: '#E4E1FF',
+    color: '#4A3FE6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    fontSize: 11,
+    overflow: 'hidden',
+  },
+  badgeMuted: {
+    backgroundColor: '#F1F1F6',
+    color: '#6F7184',
   },
   emptyContainer: {
     padding: 40,

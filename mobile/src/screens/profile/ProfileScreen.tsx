@@ -13,6 +13,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config/api';
@@ -26,6 +27,7 @@ const formatCount = (count: number) => {
 
 export default function ProfileScreen({ route, navigation }: any) {
   const usernameParam = route?.params?.username;
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<any>(null);
   const [userInfo, setUserInfo] = useState<any>(null);
   const [apps, setApps] = useState<any[]>([]);
@@ -118,7 +120,10 @@ export default function ProfileScreen({ route, navigation }: any) {
   const avatarSource = getImageSource(profile.avatarUrl);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingBottom: 120 + insets.bottom }]}
+    >
       <View style={styles.topNav}>
         {usernameParam ? (
           <TouchableOpacity style={styles.navButton} onPress={() => navigation.goBack()}>
