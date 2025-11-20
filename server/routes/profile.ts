@@ -11,7 +11,19 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res) => {
     const userId = req.userId!;
 
     const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-    const [profile] = await db.select().from(profiles).where(eq(profiles.userId, userId)).limit(1);
+    let [profile] = await db.select().from(profiles).where(eq(profiles.userId, userId)).limit(1);
+
+    // Missing profile can happen for legacy users; auto-create a shell profile so the app does not break.
+    if (user && !profile) {
+      await db
+        .insert(profiles)
+        .values({
+          userId: user.id,
+          displayName: user.username ?? user.email ?? 'New user',
+        })
+        .returning();
+      [profile] = await db.select().from(profiles).where(eq(profiles.userId, userId)).limit(1);
+    }
 
     if (!user || !profile) {
       return res.status(404).json({ error: 'Profile not found' });
@@ -64,10 +76,17 @@ router.get('/:username', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const [profile] = await db.select().from(profiles).where(eq(profiles.userId, user.id)).limit(1);
+    let [profile] = await db.select().from(profiles).where(eq(profiles.userId, user.id)).limit(1);
 
     if (!profile) {
-      return res.status(404).json({ error: 'Profile not found' });
+      await db
+        .insert(profiles)
+        .values({
+          userId: user.id,
+          displayName: user.username ?? user.email ?? 'New user',
+        })
+        .returning();
+      [profile] = await db.select().from(profiles).where(eq(profiles.userId, user.id)).limit(1);
     }
 
     const [isFollowing] = await db.select()

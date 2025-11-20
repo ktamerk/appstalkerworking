@@ -93,11 +93,22 @@ const tabStyles = StyleSheet.create({
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [fontsLoaded] = useFonts(Ionicons.font);
+  const [fontsLoaded, fontError] = useFonts(Ionicons.font);
+  const [fontsReady, setFontsReady] = useState(false);
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Never block UI on fonts forever; proceed if loaded, errored, or timed out.
+  useEffect(() => {
+    const timer = setTimeout(() => setFontsReady(true), 3000);
+    if (fontsLoaded || fontError) {
+      setFontsReady(true);
+      clearTimeout(timer);
+    }
+    return () => clearTimeout(timer);
+  }, [fontsLoaded, fontError]);
 
   const checkAuth = async () => {
     try {
@@ -125,7 +136,7 @@ export default function App() {
     setIsAuthenticated(false);
   };
 
-  if (isLoading || !fontsLoaded) {
+  if (isLoading || !fontsReady) {
     return <SplashScreen />;
   }
 

@@ -1,19 +1,21 @@
 import { Platform } from 'react-native';
 
-// __DEV__ global deÄŸiÅŸkeni TypeScript iÃ§in
+// __DEV__ global deðiþkeni TypeScript için
+// eslint-disable-next-line no-undef
 declare const __DEV__: boolean;
 
-// Android Emulator iÃ§in 10.0.2.2, iOS Simulator iÃ§in localhost kullan
-const LAN_BASE_URL = 'http://192.168.222.123:5000';//10.0.0
+const LAN_BASE_URL = 'http://192.168.1.109:5000';
+const EMULATOR_BASE_URL = 'http://10.0.2.2:5000';
 
 const getBaseUrl = () => {
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+  const override = process.env.EXPO_PUBLIC_API_URL;
+  if (override) {
+    return override;
   }
 
   if (__DEV__) {
     if (Platform.OS === 'android') {
-      return LAN_BASE_URL;
+      return EMULATOR_BASE_URL;
     }
     return 'http://localhost:5000';
   }
@@ -24,11 +26,11 @@ const getBaseUrl = () => {
 const getWsUrl = () => {
   if (__DEV__) {
     if (Platform.OS === 'android') {
-      return 'ws://10.0.2.2:5000/ws';
+      return `${EMULATOR_BASE_URL.replace('http', 'ws')}/ws`;
     }
     return 'ws://localhost:5000/ws';
   }
-  return 'wss://your-production-url.com/ws';
+  return `${LAN_BASE_URL.replace('http', 'ws')}/ws`;
 };
 
 export const API_CONFIG = {
