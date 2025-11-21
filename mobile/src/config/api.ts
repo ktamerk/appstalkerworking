@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-// __DEV__ global deðiþkeni TypeScript için
+// __DEV__ global for TypeScript
 // eslint-disable-next-line no-undef
 declare const __DEV__: boolean;
 
@@ -60,6 +60,7 @@ export const API_ENDPOINTS = {
     VISIBILITY_BULK: '/api/apps/visibility/bulk',
     TRENDING: '/api/apps/trending',
     RECOMMENDED: '/api/apps/recommended',
+    SEARCH: (query: string) => `/api/apps/search?q=${encodeURIComponent(query)}`,
     SEARCH_USERS: (packageName: string) => `/api/apps/search/${packageName}/users`,
     DETAIL: (packageName: string) => `/api/apps/catalog/${packageName}`,
     COMMENTS: (packageName: string) => `/api/apps/catalog/${packageName}/comments`,
@@ -72,6 +73,7 @@ export const API_ENDPOINTS = {
     FOLLOWERS: '/api/social/followers',
     FOLLOWING: '/api/social/following',
     DISCOVER: '/api/social/discover',
+    DISCOVER_PERSONALIZED: '/api/social/discover/personalized',
     SIMILAR: '/api/social/similar',
     FRIEND_REQUEST: (userId: string) => `/api/social/friend-request/${userId}`,
     UPDATE_REQUEST: (requestId: string) => `/api/social/friend-request/${requestId}`,

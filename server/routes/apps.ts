@@ -801,4 +801,44 @@ router.get('/search/:packageName/users', async (req, res) => {
   }
 });
 
+// Global app search by name or package
+router.get('/search', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    const limit = parseInt(req.query.limit as string) || 30;
+    if (!q) {
+      return res.json({ apps: [] });
+    }
+
+    const pattern = `%${q.toLowerCase()}%`;
+
+    const results = await db
+      .select({
+        packageName: installedApps.packageName,
+        appName: installedApps.appName,
+        appIcon: installedApps.appIcon,
+        platform: installedApps.platform,
+        installCount: sql<number>`count(*)::int`,
+      })
+      .from(installedApps)
+      .where(and(
+        eq(installedApps.isVisible, true),
+        sql`lower(${installedApps.appName}) LIKE ${pattern} OR lower(${installedApps.packageName}) LIKE ${pattern}`
+      ))
+      .groupBy(
+        installedApps.packageName,
+        installedApps.appName,
+        installedApps.appIcon,
+        installedApps.platform
+      )
+      .orderBy(desc(sql`count(*)`))
+      .limit(limit);
+
+    res.json({ apps: results });
+  } catch (error) {
+    console.error('App search error:', error);
+    res.status(500).json({ error: 'Failed to search apps' });
+  }
+});
+
 export default router;

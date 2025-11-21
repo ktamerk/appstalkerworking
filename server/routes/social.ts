@@ -381,6 +381,155 @@ router.get('/discover', authenticateToken, async (_req: AuthRequest, res) => {
   }
 });
 
+router.get('/discover/personalized', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const viewerId = req.userId!;
+    const limit = parseInt(req.query.limit as string) || 30;
+
+    // viewer visible apps (signals)
+    const viewerApps = await db
+      .select({ packageName: installedApps.packageName })
+      .from(installedApps)
+      .where(and(eq(installedApps.userId, viewerId), eq(installedApps.isVisible, true)));
+
+    // fallback to legacy discover if no signals
+    if (viewerApps.length === 0) {
+      const discover = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          displayName: profiles.displayName,
+          avatarUrl: profiles.avatarUrl,
+          bio: profiles.bio,
+          appsCount: sql<number>`count(${installedApps.id})::int`,
+          overlapCount: sql<number>`0`,
+          mutualFollowers: sql<number>`0`,
+        })
+        .from(users)
+        .innerJoin(profiles, eq(users.id, profiles.userId))
+        .leftJoin(
+          installedApps,
+          and(eq(installedApps.userId, users.id), eq(installedApps.isVisible, true))
+        )
+        .where(ne(users.id, viewerId))
+        .groupBy(users.id, profiles.displayName, profiles.avatarUrl, profiles.bio)
+        .orderBy(desc(sql`count(${installedApps.id})`))
+        .limit(limit);
+
+      return res.json({ users: discover, fallback: true });
+    }
+
+    const viewerPackages = viewerApps.map((row) => row.packageName);
+
+    // people the viewer already follows
+    const followingRows = await db
+      .select({ followingId: follows.followingId })
+      .from(follows)
+      .where(eq(follows.followerId, viewerId));
+    const followingIds = followingRows.map((row) => row.followingId);
+
+    // overlap: users sharing visible apps with viewer
+    const overlapRows = await db
+      .select({
+        userId: installedApps.userId,
+        overlapCount: sql<number>`count(*)::int`,
+      })
+      .from(installedApps)
+      .where(and(
+        eq(installedApps.isVisible, true),
+        inArray(installedApps.packageName, viewerPackages),
+        ne(installedApps.userId, viewerId),
+      ))
+      .groupBy(installedApps.userId)
+      .orderBy(desc(sql`count(*)`))
+      .limit(200);
+
+    const candidateIds = overlapRows.map((row) => row.userId);
+
+    if (candidateIds.length === 0) {
+      const discover = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          displayName: profiles.displayName,
+          avatarUrl: profiles.avatarUrl,
+          bio: profiles.bio,
+          appsCount: sql<number>`count(${installedApps.id})::int`,
+          overlapCount: sql<number>`0`,
+          mutualFollowers: sql<number>`0`,
+        })
+        .from(users)
+        .innerJoin(profiles, eq(users.id, profiles.userId))
+        .leftJoin(
+          installedApps,
+          and(eq(installedApps.userId, users.id), eq(installedApps.isVisible, true))
+        )
+        .where(ne(users.id, viewerId))
+        .groupBy(users.id, profiles.displayName, profiles.avatarUrl, profiles.bio)
+        .orderBy(desc(sql`count(${installedApps.id})`))
+        .limit(limit);
+
+      return res.json({ users: discover, fallback: true });
+    }
+
+    // mutual followers: how many of my followings also follow this candidate
+    let mutualMap = new Map<string, number>();
+    if (followingIds.length > 0) {
+      const mutualRows = await db
+        .select({
+          targetId: follows.followingId,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(follows)
+        .where(and(
+          inArray(follows.followerId, followingIds),
+          inArray(follows.followingId, candidateIds),
+        ))
+        .groupBy(follows.followingId);
+      mutualMap = new Map(mutualRows.map((row: any) => [row.targetId, row.count]));
+    }
+
+    const baseScores = new Map<string, number>();
+    overlapRows.forEach((row) => {
+      const mutualFactor = (mutualMap.get(row.userId) ?? 0) * 2;
+      baseScores.set(row.userId, row.overlapCount * 3 + mutualFactor);
+    });
+
+    const userRecords = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        displayName: profiles.displayName,
+        avatarUrl: profiles.avatarUrl,
+        bio: profiles.bio,
+        appsCount: sql<number>`count(${installedApps.id})::int`,
+      })
+      .from(users)
+      .innerJoin(profiles, eq(users.id, profiles.userId))
+      .leftJoin(
+        installedApps,
+        and(eq(installedApps.userId, users.id), eq(installedApps.isVisible, true))
+      )
+      .where(inArray(users.id, candidateIds))
+      .groupBy(users.id, profiles.displayName, profiles.avatarUrl, profiles.bio);
+
+    const sorted = userRecords
+      .map((u) => ({
+        ...u,
+        overlapCount: overlapRows.find((row) => row.userId === u.id)?.overlapCount ?? 0,
+        mutualFollowers: mutualMap.get(u.id) ?? 0,
+        score: baseScores.get(u.id) ?? 0,
+      }))
+      .sort((a, b) => b.score - a.score || b.appsCount - a.appsCount)
+      .slice(0, limit);
+
+    res.json({ users: sorted, fallback: false });
+  } catch (error) {
+    console.error('Personalized discover error:', error);
+    res.status(500).json({ error: 'Failed to load personalized discover' });
+  }
+});
+
 router.get('/similar', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const viewerId = req.userId!;

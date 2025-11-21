@@ -99,6 +99,12 @@ adb shell monkey -p com.appstalker.mobile -c android.intent.category.LAUNCHER 1
 - Auto-scan is not available; apps must be added manually via catalog search/Manage Apps.
 - Testing can be done with Expo Go for non-native paths; custom dev client/build required for any native additions.
 
+### macOS / iOS hybrid discovery plan (kaynak)
+- **Info.plist Golden 50**: LSApplicationQueriesSchemes ile 50 scheme listesi (sosyal, medya/eğlence, finans/alışveriş, verimlilik, Google servisleri + 5 boş slot). Manage Apps açılınca Linking.canOpenURL döngüsüyle sessiz tarama; bulunanlar “Bulunanlar” segmentinde görünür (uyarı gösterme).
+- **Kestirme/Shortcuts**: Uygulama URL scheme `appstalker://bulk-import?apps=<encoded>`; Manage Apps’te “Otomatik Tara” butonu `shortcuts://run-shortcut?name=AppstalkerScan` çalıştırır. Kestirme tüm App Intent isimlerini virgülle toplar, URL encode eder, appstalker:// ile uygulamaya döner. SceneDelegate/AppDelegate URL yakalar, JS tarafında parse edilip fuzzy-match ile (contains/levenshtein) katalog eşleşmesine eklenir. Dedup: Golden50 + Shortcut birleşimi packageName bazlı Set ile filtrelenir.
+- **Manuel arama**: Mevcut katalog araması aynen kalır; otomatik bulunanların altında listelenir.
+- **Kaydet akışı**: Kullanıcı “Profilime Ekle” dediğinde otomatik + manuel seçilenler /apps/sync ile profile yazılır. iOS’ta yalnızca platform check ile koşullu çalışmalı; Android akışı etkilenmez.
+
 ---
 
 ## Testing Checklist (what to verify before sharing)

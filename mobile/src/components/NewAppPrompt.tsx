@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, FlatList, Image } from 'react-native';
+import { getImageSource } from '../utils/iconHelpers';
 
 interface NewApp {
   packageName: string;
@@ -57,8 +58,8 @@ export default function NewAppPrompt({ visible, apps, onConfirm, onDismiss }: Ne
     return (
       <TouchableOpacity style={styles.appItem} onPress={() => toggleApp(item.packageName)}>
         <View style={styles.appInfo}>
-          {item.appIcon ? (
-            <Image source={{ uri: item.appIcon }} style={styles.appIcon} />
+          {getImageSource(item.appIcon) ? (
+            <Image source={{ uri: getImageSource(item.appIcon)! }} style={styles.appIcon} />
           ) : (
             <View style={styles.appIconFallback}>
               <Text style={styles.appIconInitial}>{item.appName[0]}</Text>

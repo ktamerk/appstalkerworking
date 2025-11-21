@@ -1,24 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  ScrollView,
   StyleSheet,
   Switch,
+  Text,
   TextInput,
-  Image,
-  ActivityIndicator,
-  Platform,
-  Alert,
-  ScrollView,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config/api';
 import { InstalledAppsService } from '../../services/InstalledAppsService';
+import { getImageSource } from '../../utils/iconHelpers';
+
+type TabKey = 'visible' | 'hidden';
 
 interface App {
-  id: string;
+  id?: string;
   packageName: string;
   appName: string;
   appIcon?: string;
@@ -26,8 +29,6 @@ interface App {
   platform: string;
   installedAt?: string;
 }
-
-type TabKey = 'visible' | 'hidden';
 
 const SYSTEM_PREFIXES = [
   'com.android.',
@@ -53,9 +54,8 @@ const ALLOWED_GOOGLE_PACKAGES = new Set([
 ]);
 
 const isSystemApp = (app: App) => {
-  const pkg = app.packageName;
-  if (ALLOWED_GOOGLE_PACKAGES.has(pkg)) return false;
-  return SYSTEM_PREFIXES.some((prefix) => pkg.startsWith(prefix));
+  if (ALLOWED_GOOGLE_PACKAGES.has(app.packageName)) return false;
+  return SYSTEM_PREFIXES.some((prefix) => app.packageName.startsWith(prefix));
 };
 
 const isRecentlyAdded = (app: App, days = 7) => {
@@ -73,7 +73,11 @@ export default function ManageAppsScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<Set<string>>(new Set());
   const [syncing, setSyncing] = useState(false);
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(
+    Platform.OS === 'android'
+      ? 'Yüklediğin uygulamaları listelemek için tarama izni yalnızca cihazda okunur. Görünür yapmadıkça sunucuya paylaşılmaz; istersen izni reddedip manuel ekleyebilirsin.'
+      : null
+  );
   const [activeTab, setActiveTab] = useState<TabKey>('visible');
   const [hideSystemApps, setHideSystemApps] = useState(true);
 
@@ -89,7 +93,7 @@ export default function ManageAppsScreen({ navigation }: any) {
     try {
       setLoading(true);
       const response = await api.get(API_ENDPOINTS.APPS.ME);
-      setApps(response.data.apps);
+      setApps(response.data.apps || []);
     } catch (error) {
       console.error('Load apps error:', error);
     } finally {
@@ -101,19 +105,20 @@ export default function ManageAppsScreen({ navigation }: any) {
     if (Platform.OS === 'ios') {
       Alert.alert(
         'iOS kısıtlaması',
-        'iOS cihazlarında yüklü uygulamalar listesine erişim sağlanamadığı için uygulamaları manuel eklemeniz gerekir.'
+        'iOS cihazlarda yüklü uygulamalar listesine erişim sağlanamadığı için uygulamaları manuel eklemeniz gerekir.'
       );
       return;
     }
 
     try {
       setSyncing(true);
-      setInfoMessage(null);
 
       const installedApps = await InstalledAppsService.getInstalledApps();
 
       if (!installedApps.length) {
-        setInfoMessage('Cihazdan okunabilecek uygulama bulunamadı ya da izin verilmedi.');
+        setInfoMessage(
+          'İzin verilmedi veya okunacak uygulama bulunamadı. İstersen manuel arama ile ekleyebilirsin.'
+        );
         return;
       }
 
@@ -123,10 +128,32 @@ export default function ManageAppsScreen({ navigation }: any) {
       await loadApps();
     } catch (error) {
       console.error('Device scan error:', error);
-      setInfoMessage('Cihaz taraması başarısız oldu. Lütfen tekrar deneyin.');
+      setInfoMessage(
+        'Cihaz taraması başarısız oldu ya da izin reddedildi. İstersen manuel arama ile devam edebilirsin.'
+      );
     } finally {
       setSyncing(false);
     }
+  };
+
+  const confirmAndScan = () => {
+    if (Platform.OS !== 'android') {
+      handleDeviceScan();
+      return;
+    }
+
+    Alert.alert(
+      'Neden izne ihtiyaç var?',
+      'Yüklü uygulamaları okuyup eşleştirerek profilini hızlıca dolduruyoruz. Veriler, görünür yapmadıkça sunucuya paylaşılmaz.',
+      [
+        {
+          text: 'Atla',
+          style: 'cancel',
+          onPress: () => setInfoMessage('Tarama atlandı. Uygulamaları manuel arama ile ekleyebilirsin.'),
+        },
+        { text: 'Devam et', onPress: () => handleDeviceScan() },
+      ]
+    );
   };
 
   const filterApps = () => {
@@ -138,47 +165,42 @@ export default function ManageAppsScreen({ navigation }: any) {
     }
 
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+      const q = searchQuery.toLowerCase();
       list = list.filter(
         (app) =>
-          app.appName.toLowerCase().includes(query) ||
-          app.packageName.toLowerCase().includes(query)
+          app.appName.toLowerCase().includes(q) ||
+          app.packageName.toLowerCase().includes(q)
       );
     }
+
     setFilteredApps(list);
   };
 
   const toggleVisibility = async (app: App) => {
     const packageName = app.packageName;
-    setUpdating(prev => new Set(prev).add(packageName));
+    setUpdating((prev) => new Set(prev).add(packageName));
+    const newVisibility = !app.isVisible;
+
+    // optimistic
+    setApps((prevApps) =>
+      prevApps.map((a) =>
+        a.packageName === packageName ? { ...a, isVisible: newVisibility } : a
+      )
+    );
 
     try {
-      // Optimistic update
-      const newVisibility = !app.isVisible;
-      setApps(prevApps => 
-        prevApps.map(a => 
-          a.packageName === packageName 
-            ? { ...a, isVisible: newVisibility }
-            : a
-        )
-      );
-
       await api.post(API_ENDPOINTS.APPS.VISIBILITY_BULK, {
-        updates: [{
-          packageName: packageName,
-          isVisible: newVisibility,
-        }]
+        updates: [{ packageName, isVisible: newVisibility }],
       });
     } catch (error) {
       console.error('Toggle visibility error:', error);
-      // Rollback on error
       setApps((prevApps) =>
         prevApps.map((a) =>
           a.packageName === packageName ? { ...a, isVisible: app.isVisible } : a
         )
       );
     } finally {
-      setUpdating(prev => {
+      setUpdating((prev) => {
         const next = new Set(prev);
         next.delete(packageName);
         return next;
@@ -187,7 +209,6 @@ export default function ManageAppsScreen({ navigation }: any) {
   };
 
   const updateAllVisibility = async (targetVisibility: boolean) => {
-    // bulk updates reuse existing API endpoint; make sure only changed apps are sent
     const candidates = apps.filter((app) => app.isVisible !== targetVisibility);
     if (!candidates.length) return;
     try {
@@ -219,21 +240,23 @@ export default function ManageAppsScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={22} color="#2F2F6A" />
         </TouchableOpacity>
-      <Text style={styles.topTitle}>Manage Apps</Text>
-      <View style={{ width: 32 }} />
-    </View>
-
-    <Text style={styles.subtitle}>Choose which apps to show on your profile.</Text>
-
-    {Platform.OS === 'ios' && (
-      <View style={styles.iosBanner}>
-        <Ionicons name="alert-circle-outline" size={18} color="#6F58D9" />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.iosBannerTitle}>iOS limitation</Text>
-          <Text style={styles.iosBannerText}>Apple doesn't allow automatic device scans. Please manage apps manually.</Text>
-        </View>
+        <Text style={styles.topTitle}>Manage Apps</Text>
+        <View style={{ width: 32 }} />
       </View>
-    )}
+
+      <Text style={styles.subtitle}>Choose which apps to show on your profile.</Text>
+
+      {Platform.OS === 'ios' && (
+        <View style={styles.iosBanner}>
+          <Ionicons name="alert-circle-outline" size={18} color="#6F58D9" />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.iosBannerTitle}>iOS limitation</Text>
+            <Text style={styles.iosBannerText}>
+              Apple doesn't allow automatic device scans. Please manage apps manually.
+            </Text>
+          </View>
+        </View>
+      )}
 
       <TextInput
         style={styles.searchInput}
@@ -253,7 +276,7 @@ export default function ManageAppsScreen({ navigation }: any) {
         />
       </View>
 
-      <TouchableOpacity style={styles.scanButton} onPress={handleDeviceScan} disabled={syncing}>
+      <TouchableOpacity style={styles.scanButton} onPress={confirmAndScan} disabled={syncing}>
         {syncing ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -265,7 +288,7 @@ export default function ManageAppsScreen({ navigation }: any) {
       </TouchableOpacity>
 
       {infoMessage && (
-        <View style={[styles.infoBanner, infoMessage.includes('ba') && styles.infoBannerWarning]}>
+        <View style={styles.infoBanner}>
           <Text style={styles.infoBannerText}>{infoMessage}</Text>
         </View>
       )}
@@ -305,8 +328,8 @@ export default function ManageAppsScreen({ navigation }: any) {
           {filteredApps.map((item) => (
             <View key={item.packageName} style={styles.appCard}>
               <View style={styles.appInfo}>
-                {item.appIcon ? (
-                  <Image source={{ uri: item.appIcon }} style={styles.appIcon} />
+                {getImageSource(item.appIcon) ? (
+                  <Image source={{ uri: getImageSource(item.appIcon)! }} style={styles.appIcon} />
                 ) : (
                   <View style={styles.appIconPlaceholder}>
                     <Text style={styles.appIconInitial}>{item.appName?.[0]?.toUpperCase()}</Text>
@@ -358,69 +381,61 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 6,
     borderRadius: 16,
-    backgroundColor: '#E6E2FF',
   },
   topTitle: {
-    fontSize: 20,
+    color: '#1F1A40',
+    fontSize: 18,
     fontWeight: '700',
-    color: '#1F1455',
   },
   subtitle: {
-    marginTop: 12,
-    color: '#6C6A8C',
+    marginTop: 4,
+    marginBottom: 12,
+    color: '#6A6B8E',
     fontSize: 14,
   },
   iosBanner: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#EDE8FF',
-    borderRadius: 16,
+    alignItems: 'flex-start',
+    backgroundColor: '#EFEAFF',
     padding: 12,
-    marginTop: 12,
+    borderRadius: 14,
+    marginBottom: 12,
   },
   iosBannerTitle: {
-    fontSize: 13,
+    color: '#2F2F6A',
     fontWeight: '700',
-    color: '#4C3FA7',
   },
   iosBannerText: {
-    fontSize: 12,
-    color: '#605F83',
+    color: '#4A4C7A',
+    marginTop: 2,
   },
   searchInput: {
-    marginTop: 16,
-    borderRadius: 16,
-    backgroundColor: '#ECEAFD',
+    backgroundColor: '#fff',
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    fontSize: 15,
     color: '#1F1A40',
+    borderWidth: 1,
+    borderColor: '#E4E5F2',
   },
   filterRow: {
-    marginTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: 12,
   },
   filterLabel: {
-    fontSize: 14,
-    color: '#403D66',
+    color: '#2F2F6A',
     fontWeight: '600',
   },
   scanButton: {
-    marginTop: 16,
+    marginTop: 14,
     backgroundColor: '#4A3FE6',
-    borderRadius: 18,
-    paddingVertical: 14,
+    borderRadius: 14,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#4A3FE6',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
   },
   scanButtonText: {
     color: '#fff',
@@ -428,120 +443,111 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   infoBanner: {
-    marginTop: 12,
-    borderRadius: 14,
+    marginTop: 10,
+    backgroundColor: '#F0F1FF',
     padding: 12,
-    backgroundColor: '#E9EDFF',
-  },
-  infoBannerWarning: {
-    backgroundColor: '#FFEFE2',
+    borderRadius: 12,
   },
   infoBannerText: {
-    color: '#4A4A6D',
-    fontSize: 13,
+    color: '#333',
   },
   segment: {
-    marginTop: 16,
     flexDirection: 'row',
-    borderRadius: 16,
-    backgroundColor: '#EDEBFF',
-    padding: 4,
+    backgroundColor: '#EDECF8',
+    borderRadius: 12,
+    padding: 6,
+    marginTop: 16,
   },
   segmentButton: {
     flex: 1,
-    borderRadius: 12,
     paddingVertical: 8,
     alignItems: 'center',
+    borderRadius: 10,
   },
   segmentButtonActive: {
-    backgroundColor: '#fff',
+    backgroundColor: '#4A3FE6',
   },
   segmentText: {
-    color: '#7C7AA4',
+    color: '#555',
     fontWeight: '600',
   },
   segmentTextActive: {
-    color: '#4A3FE6',
+    color: '#fff',
   },
   bulkRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginTop: 12,
   },
   bulkButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 1,
+    justifyContent: 'center',
+    backgroundColor: '#EDECF8',
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginRight: 8,
   },
   bulkButtonText: {
+    marginLeft: 6,
     color: '#1F1A40',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   loadingContainer: {
-    marginTop: 40,
+    marginTop: 24,
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 10,
-    color: '#6C6A8C',
+    marginTop: 8,
+    color: '#4A4C7A',
   },
   listContent: {
-    marginTop: 18,
-    gap: 12,
+    marginTop: 14,
+    gap: 10,
   },
   appCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#EEE',
   },
   appInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 10,
     flex: 1,
   },
   appIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 46,
+    height: 46,
+    borderRadius: 10,
   },
   appIconPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: '#E0DEFF',
-    justifyContent: 'center',
+    width: 46,
+    height: 46,
+    borderRadius: 10,
+    backgroundColor: '#E5E7F5',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   appIconInitial: {
+    color: '#2F2F6A',
     fontWeight: '700',
-    color: '#4A3FE6',
+    fontSize: 16,
   },
   appName: {
-    fontSize: 16,
-    fontWeight: '600',
     color: '#1F1A40',
+    fontWeight: '700',
+    fontSize: 15,
   },
   appMeta: {
+    color: '#6A6B8E',
     fontSize: 12,
-    color: '#7A799A',
   },
   tagRow: {
     flexDirection: 'row',
@@ -549,23 +555,24 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   badge: {
-    backgroundColor: '#E4E1FF',
+    backgroundColor: '#EDECF8',
     color: '#4A3FE6',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 10,
-    fontSize: 11,
+    borderRadius: 8,
     overflow: 'hidden',
+    fontSize: 10,
+    fontWeight: '700',
   },
   badgeMuted: {
-    backgroundColor: '#F1F1F6',
-    color: '#6F7184',
+    backgroundColor: '#F3F3F7',
+    color: '#6A6B8E',
   },
   emptyContainer: {
-    padding: 40,
+    paddingVertical: 30,
     alignItems: 'center',
   },
   emptyText: {
-    color: '#8C8AA8',
+    color: '#9FA0C7',
   },
 });

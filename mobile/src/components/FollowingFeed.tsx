@@ -57,8 +57,18 @@ export default function FollowingFeed({ navigation, onRefreshStart, ListHeaderCo
       const response = await api.get(API_ENDPOINTS.SOCIAL.FOLLOWING);
       const followingUsers = response.data.following;
 
-      const discoverResponse = await api.get(API_ENDPOINTS.SOCIAL.DISCOVER);
-      const discoverUsers = discoverResponse.data.users || [];
+      let discoverUsers: any[] = [];
+      try {
+        const discoverResponse = await api.get(API_ENDPOINTS.SOCIAL.DISCOVER_PERSONALIZED);
+        discoverUsers = discoverResponse.data.users || [];
+        if ((!discoverUsers || discoverUsers.length === 0) && discoverResponse.data.fallback) {
+          const fallbackLegacy = await api.get(API_ENDPOINTS.SOCIAL.DISCOVER);
+          discoverUsers = fallbackLegacy.data.users || [];
+        }
+      } catch (e) {
+        const fallbackLegacy = await api.get(API_ENDPOINTS.SOCIAL.DISCOVER);
+        discoverUsers = fallbackLegacy.data.users || [];
+      }
 
       const usersWithApps = (await hydrateUsers(followingUsers)).map((user: any) => ({
         ...user,

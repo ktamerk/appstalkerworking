@@ -4,8 +4,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import LoginScreen from './src/screens/auth/LoginScreen';
 import RegisterScreen from './src/screens/auth/RegisterScreen';
 import FeedScreen from './src/screens/feed/FeedScreen';
@@ -27,16 +27,28 @@ import CollectionDetailScreen from './src/screens/profile/CollectionDetailScreen
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-function TabIcon({
-  name,
-  focused,
-}: {
-  name: keyof typeof Ionicons.glyphMap;
-  focused: boolean;
-}) {
+const TAB_CONFIG: Record<
+  'Feed' | 'Search' | 'Notifications' | 'Profile',
+  { label: string; active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }
+> = {
+  Feed: { label: 'Feed', active: 'home', inactive: 'home-outline' },
+  Search: { label: 'Discover', active: 'search', inactive: 'search-outline' },
+  Notifications: { label: 'Alerts', active: 'notifications', inactive: 'notifications-outline' },
+  Profile: { label: 'Profile', active: 'person', inactive: 'person-outline' },
+};
+
+function TabIcon({ routeName, focused }: { routeName: keyof typeof TAB_CONFIG; focused: boolean }) {
+  const { label, active, inactive } = TAB_CONFIG[routeName];
   return (
-    <View style={[tabStyles.tabIconWrapper, focused && tabStyles.tabIconWrapperActive]}>
-      <Ionicons name={name} size={20} color={focused ? '#fff' : '#8E8BB7'} />
+    <View style={tabStyles.tabItem}>
+      <View style={[tabStyles.iconPill, focused && tabStyles.iconPillActive]}>
+        <Ionicons
+          name={focused ? active : inactive}
+          size={20}
+          color={focused ? '#fff' : '#6B6C7A'}
+        />
+      </View>
+      <Text style={[tabStyles.tabLabel, focused && tabStyles.tabLabelActive]}>{label}</Text>
     </View>
   );
 }
@@ -49,23 +61,18 @@ function MainTabs() {
         tabBarShowLabel: false,
         tabBarStyle: {
           borderTopWidth: 0,
-          backgroundColor: '#fff',
-          height: 70,
-          paddingBottom: 14,
+          backgroundColor: '#FFFFFF',
+          height: 76,
+          paddingBottom: 12,
+          paddingTop: 6,
+          shadowColor: '#1C1C28',
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: -4 },
+          elevation: 10,
         },
         tabBarIcon: ({ focused }) => {
-          switch (route.name) {
-            case 'Feed':
-              return <TabIcon name={focused ? 'home' : 'home-outline'} focused={focused} />;
-            case 'Search':
-              return <TabIcon name={focused ? 'compass' : 'compass-outline'} focused={focused} />;
-            case 'Notifications':
-              return <TabIcon name={focused ? 'notifications' : 'notifications-outline'} focused={focused} />;
-            case 'Profile':
-              return <TabIcon name={focused ? 'person' : 'person-outline'} focused={focused} />;
-            default:
-              return null;
-          }
+          return <TabIcon routeName={route.name as keyof typeof TAB_CONFIG} focused={focused} />;
         },
       })}
     >
@@ -78,16 +85,34 @@ function MainTabs() {
 }
 
 const tabStyles = StyleSheet.create({
-  tabIconWrapper: {
+  tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 44,
-    height: 44,
-    paddingVertical: 8,
-    borderRadius: 20,
+    gap: 6,
   },
-  tabIconWrapperActive: {
+  iconPill: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F2F6',
+  },
+  iconPillActive: {
     backgroundColor: '#5D4CE0',
+    shadowColor: '#5D4CE0',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  tabLabel: {
+    fontSize: 11,
+    color: '#7C7E8B',
+    fontWeight: '600',
+  },
+  tabLabelActive: {
+    color: '#1F1F33',
   },
 });
 
@@ -95,21 +120,15 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [fontsLoaded, fontError] = useFonts(Ionicons.font);
-  const [fontsReady, setFontsReady] = useState(false);
 
   useEffect(() => {
     checkAuth();
   }, []);
 
-  // Never block UI on fonts forever; proceed if loaded, errored, or timed out.
   useEffect(() => {
-    const timer = setTimeout(() => setFontsReady(true), 3000);
-    if (fontsLoaded || fontError) {
-      setFontsReady(true);
-      clearTimeout(timer);
-    }
-    return () => clearTimeout(timer);
-  }, [fontsLoaded, fontError]);
+    // Defensive: ensure vector icon font is registered for release builds
+    Ionicons.loadFont().catch(() => {});
+  }, []);
 
   const checkAuth = async () => {
     try {
@@ -137,7 +156,7 @@ export default function App() {
     setIsAuthenticated(false);
   };
 
-  if (isLoading || !fontsReady) {
+  if (isLoading || (!fontsLoaded && !fontError)) {
     return <SplashScreen />;
   }
 

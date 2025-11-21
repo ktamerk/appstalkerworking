@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config/api';
+import { getImageSource } from '../../utils/iconHelpers';
 
 interface Comment {
   id: string;
@@ -127,8 +128,8 @@ export default function AppDetailScreen({ route }: any) {
 
   const renderUser = (item: UserSnippet) => (
     <TouchableOpacity style={styles.userCard} key={item.userId}>
-      {item.avatarUrl ? (
-        <Image source={{ uri: item.avatarUrl }} style={styles.userAvatar} />
+      {getImageSource(item.avatarUrl) ? (
+        <Image source={{ uri: getImageSource(item.avatarUrl)! }} style={styles.userAvatar} />
       ) : (
         <View style={styles.userAvatarFallback}>
           <Text style={styles.userAvatarInitial}>{item.displayName?.[0]?.toUpperCase()}</Text>
@@ -157,8 +158,8 @@ export default function AppDetailScreen({ route }: any) {
     >
       <View style={styles.heroCard}>
         <View style={styles.heroRow}>
-          {appData?.iconUrl ? (
-            <Image source={{ uri: appData.iconUrl }} style={styles.appIcon} />
+          {getImageSource(appData?.iconUrl) ? (
+            <Image source={{ uri: getImageSource(appData?.iconUrl)! }} style={styles.appIcon} />
           ) : (
             <View style={styles.appIconFallback}>
               <Text style={styles.appIconInitial}>{(appData?.displayName || appName)[0]}</Text>
@@ -221,8 +222,8 @@ export default function AppDetailScreen({ route }: any) {
 
         {comments.map((comment) => (
           <View key={comment.id} style={styles.commentCard}>
-            {comment.user.avatarUrl ? (
-              <Image source={{ uri: comment.user.avatarUrl }} style={styles.commentAvatar} />
+            {getImageSource(comment.user.avatarUrl) ? (
+              <Image source={{ uri: getImageSource(comment.user.avatarUrl)! }} style={styles.commentAvatar} />
             ) : (
               <View style={styles.commentAvatarFallback}>
                 <Text style={styles.commentAvatarInitial}>
