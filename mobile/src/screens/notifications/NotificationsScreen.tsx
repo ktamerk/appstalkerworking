@@ -56,17 +56,6 @@ export default function NotificationsScreen({ navigation }: any) {
     }
   };
 
-  const markAllAsRead = async () => {
-    try {
-      await api.put(API_ENDPOINTS.NOTIFICATIONS.READ_ALL);
-      setNotifications((prev) =>
-        prev.map((n: any) => ({ ...n, isRead: true }))
-      );
-    } catch (error) {
-      console.error('Mark all as read error:', error);
-    }
-  };
-
   const getNotificationIcon = (content: string) => {
     if (content.includes('follow')) return '👤';
     if (content.includes('installed')) return '📱';
@@ -144,41 +133,8 @@ export default function NotificationsScreen({ navigation }: any) {
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Notifications</Text>
-        <TouchableOpacity onPress={markAllAsRead}>
-          <Text style={styles.readAllText}>Read All</Text>
-        </TouchableOpacity>
+        <View style={{ width: 60 }} />
       </View>
-
-      {digest && (
-        <View style={styles.digestCard}>
-          <Text style={styles.digestLabel}>THIS WEEK</Text>
-          <Text style={styles.digestTitle}>Your Weekly Digest</Text>
-          <Text style={styles.digestDescription}>{digest.summary}</Text>
-          <View style={styles.digestRow}>
-            {digest.stats?.avatars?.slice?.(0, 4)?.map((url: string, index: number) => (
-              <Image key={`${url}-${index}`} source={{ uri: url }} style={styles.digestAvatar} />
-            ))}
-            <Text style={styles.digestHint}>You gained {digest.stats?.newFollowers || 0} new followers.</Text>
-          </View>
-          <TouchableOpacity style={styles.digestButton}>
-            <Text style={styles.digestButtonText}>View Summary</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {milestones.length > 0 && (
-        <View style={styles.milestoneCard}>
-          <Text style={styles.milestoneLabel}>MILESTONE</Text>
-          <Text style={styles.milestoneTitle}>{milestones[0].title}</Text>
-          <Text style={styles.milestoneDescription}>
-            Congratulations! Your app collections are getting popular.
-          </Text>
-          <TouchableOpacity style={styles.milestoneButton}>
-            <Text style={styles.milestoneButtonText}>Share</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       <View style={styles.sectionHeading}>
         <Text style={styles.sectionHeadingText}>Today</Text>
       </View>
@@ -216,6 +172,36 @@ export default function NotificationsScreen({ navigation }: any) {
         }
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       />
+
+      {digest && (
+        <View style={styles.digestCard}>
+          <Text style={styles.digestLabel}>THIS WEEK</Text>
+          <Text style={styles.digestTitle}>Your Weekly Digest</Text>
+          <Text style={styles.digestDescription}>{digest.summary}</Text>
+          <View style={styles.digestRow}>
+            {digest.stats?.avatars?.slice?.(0, 4)?.map((url: string, index: number) => (
+              <Image key={`${url}-${index}`} source={{ uri: url }} style={styles.digestAvatar} />
+            ))}
+            <Text style={styles.digestHint}>You gained {digest.stats?.newFollowers || 0} new followers.</Text>
+          </View>
+          <TouchableOpacity style={styles.digestButton}>
+            <Text style={styles.digestButtonText}>View Summary</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {milestones.length > 0 && (
+        <View style={styles.milestoneCard}>
+          <Text style={styles.milestoneLabel}>MILESTONE</Text>
+          <Text style={styles.milestoneTitle}>{milestones[0].title}</Text>
+          <Text style={styles.milestoneDescription}>
+            Congratulations! Your app collections are getting popular.
+          </Text>
+          <TouchableOpacity style={styles.milestoneButton}>
+            <Text style={styles.milestoneButtonText}>Share</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -244,11 +230,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1D1C39',
   },
-  readAllText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#5A2ED6',
-  },
+  readAllText: {},
   digestCard: {
     marginHorizontal: 16,
     backgroundColor: '#FFFFFF',

@@ -31,7 +31,6 @@ export default function ProfileScreen({ route, navigation }: any) {
   const [profile, setProfile] = useState<any>(null);
   const [userInfo, setUserInfo] = useState<any>(null);
   const [apps, setApps] = useState<any[]>([]);
-  const [similarUsers, setSimilarUsers] = useState<any[]>([]);
   const [collections, setCollections] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -58,13 +57,6 @@ export default function ProfileScreen({ route, navigation }: any) {
       } catch (err) {
         console.warn('Collections load error', err);
         setCollections([]);
-      }
-
-      if (!usernameParam) {
-        const similarResponse = await api.get(API_ENDPOINTS.SOCIAL.SIMILAR);
-        setSimilarUsers(similarResponse.data.users || []);
-      } else {
-        setSimilarUsers([]);
       }
     } catch (error) {
       console.error('Load profile error', error);
@@ -275,45 +267,6 @@ export default function ProfileScreen({ route, navigation }: any) {
           </Text>
         )}
       </View>
-
-      {isOwnProfile && similarUsers.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Similar Stalkers</Text>
-            <Text style={styles.sectionSubtitle}>People sharing your vibe</Text>
-          </View>
-          {similarUsers.map((item) => (
-            <TouchableOpacity
-              key={item.user.id}
-              style={styles.similarCard}
-              onPress={() => navigation.navigate('UserProfile', { username: item.user.username })}
-            >
-              {(() => {
-                const similarAvatar = getImageSource(item.user.avatarUrl);
-                if (similarAvatar) {
-                  return <Image source={{ uri: similarAvatar }} style={styles.similarAvatar} />;
-                }
-                return (
-                  <View style={styles.similarAvatarFallback}>
-                    <Text style={styles.similarAvatarInitial}>{item.user.displayName?.[0]?.toUpperCase()}</Text>
-                  </View>
-                );
-              })()}
-              <View style={styles.similarInfo}>
-                <Text style={styles.similarName}>{item.user.displayName}</Text>
-                <Text style={styles.similarUsername}>@{item.user.username}</Text>
-                <Text style={styles.similarMeta}>
-                  {item.matchScore}% match · {item.overlapCount} shared apps
-                </Text>
-                {item.sharedApps?.length > 0 && (
-                  <Text style={styles.similarShared}>{item.sharedApps.slice(0, 3).join(' • ')}</Text>
-                )}
-              </View>
-              <Text style={styles.matchChip}>Match</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
     </ScrollView>
   );
 }
@@ -513,25 +466,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   appTileIcon: {
-    width: 74,
-    height: 74,
-    borderRadius: 24,
-    backgroundColor: '#FFF',
+    width: 68,
+    height: 68,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#EFF0FC',
     marginBottom: 8,
-    shadowColor: '#7D7FE1',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
   },
   appTileImage: {
-    width: 54,
-    height: 54,
-    borderRadius: 16,
+    width: 64,
+    height: 64,
+    borderRadius: 18,
   },
   appTileInitial: {
     fontSize: 20,
@@ -610,69 +555,5 @@ const styles = StyleSheet.create({
   collectionBadgePrivate: {
     backgroundColor: '#F5F2FF',
     color: '#7C6BD8',
-  },
-  similarCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 14,
-    borderRadius: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-  },
-  similarAvatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    marginRight: 12,
-  },
-  similarAvatarFallback: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: '#E0DEFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  similarAvatarInitial: {
-    color: '#5C5DB5',
-    fontWeight: '700',
-    fontSize: 20,
-  },
-  similarInfo: {
-    flex: 1,
-  },
-  similarName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#16183D',
-  },
-  similarUsername: {
-    fontSize: 13,
-    color: '#9193B8',
-    marginTop: 2,
-  },
-  similarMeta: {
-    fontSize: 12,
-    color: '#6F61F4',
-    marginTop: 6,
-  },
-  similarShared: {
-    fontSize: 12,
-    color: '#9193B8',
-    marginTop: 4,
-  },
-  matchChip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: '#F0EFFF',
-    borderRadius: 999,
-    color: '#6F61F4',
-    fontWeight: '700',
   },
 });

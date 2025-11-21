@@ -9,6 +9,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: APP_NAME,
   slug: APP_SLUG,
   version: '1.0.0',
+  icon: './assets/app-icon.png',
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
   platforms: ['ios', 'android'],

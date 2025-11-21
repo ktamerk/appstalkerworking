@@ -32,7 +32,7 @@ const TAB_CONFIG: Record<
   { label: string; active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }
 > = {
   Feed: { label: 'Feed', active: 'home', inactive: 'home-outline' },
-  Search: { label: 'Discover', active: 'search', inactive: 'search-outline' },
+  Search: { label: 'Similar', active: 'people', inactive: 'people-outline' },
   Notifications: { label: 'Alerts', active: 'notifications', inactive: 'notifications-outline' },
   Profile: { label: 'Profile', active: 'person', inactive: 'person-outline' },
 };
